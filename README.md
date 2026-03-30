@@ -10,22 +10,32 @@ LumenCare is a modern, React Native mobile application designed for caregivers a
 *   **Patient Status Monitoring:** Instantly assesses the psychological status payload of a patient directly deriving the real-time "Stress Level" index automatically from the live HRV variables. 
 *   **Modern Minimalist UI:** A fully optimized, beautifully clean Apple Health-inspired interface emphasizing bold typography, intuitive cardiovascular color charting, and uncluttered native navigation.
 
-## 🛠 Tech Stack
+## 🛠 Tech Stack & Core Dependencies
 
-*   **Frontend Framework:** [React Native](https://reactnative.dev/) alongside [Expo](https://expo.dev/)
-*   **Backend Infrastructure:** [Supabase](https://supabase.com/) (PostgreSQL Database, Realtime DB, Auth, and Storage Buckets)
-*   **Data Visualization:** Fluid customized tracking utilizing `react-native-gifted-charts`.
+This project relies on the following core environments to natively bridge the Caregiver App to the Smart Mirror hardware:
+*   **React Native / Expo** (`expo ^54.0.0`)
+*   **Supabase Client** (`@supabase/supabase-js ^2.100.1`) — Manages backend database logic & storage
+*   **State Management** (`zustand ^5.0.12`) — Global UI and session tracking
+*   **UI & Graphs** (`react-native-gifted-charts`, `nativewind`, `lucide-react-native`/`expo-vector-icons`)
+*   **Routing** (`@react-navigation/native`, `@react-navigation/bottom-tabs`)
+*   **Hardware APIs** (`expo-image-picker`, `expo-haptics`, `expo-secure-store`)
+
+*(For the exhaustive dependency tree, please refer physically to `package.json`)*
 
 ## 📦 Setup & Installation
 
-1. **Clone the Repository & Install Dependencies**
+**1. Clone the Repository**
 ```bash
 git clone https://github.com/itznotpk/LumenCare-Smart_Wellness_Mirror.git
 cd LumenCare-Smart_Wellness_Mirror
+```
+
+**2. Install Node Dependencies**
+```bash
 npm install
 ```
 
-2. **Configure Supabase Hardware Connections**
+**3. Configure Supabase Server Architecture**
 You will need to construct an active Supabase server environment. In the root of your application, generate an `.env` file explicitly containing your remote keys:
 ```env
 EXPO_PUBLIC_SUPABASE_URL=your_project_url
@@ -37,10 +47,20 @@ Execute the database schema structural scripts internally provided within the pr
 *   `supabase_vitals_schema_v2.sql` (HRV hardware additions and explicit Stress Level variables)
 *   `supabase_interactive_schema.sql` (Daily Drops schema linking and architectural bucket RLS policies)
 
-Ensure you manually generate the `daily_drops` public Storage Bucket natively inside your host to allow the app to generate and deploy URL signatures flawlessly remotely.
+*Ensure you manually generate the `daily_drops` public Storage Bucket natively inside your host to allow the app to generate and deploy URL signatures flawlessly remotely.*
 
-3. **Launch the Interface**
+## 🚀 How to Start the App
+
+Once your configuration and dependencies are strictly installed, boot the Expo bundler:
+
 ```bash
+# Standard boot
+npx expo start
+
+# If you encounter Metro caching issues, forcefully clear the cache
 npx expo start --clear
 ```
-Open the Expo Go app directly on your physical mobile iOS/Android device to synchronize and operate your Caregiver dashboard structure inherently natively.
+
+1. **Download Expo Go** on your physical iOS or Android device.
+2. Scan the **QR Code** generated natively inside your terminal footprint. 
+3. The app will remotely compile and deploy directly onto your mobile architecture!

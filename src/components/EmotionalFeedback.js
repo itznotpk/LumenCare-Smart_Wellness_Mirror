@@ -1,67 +1,77 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useToastStore } from '../store/useToastStore';
 import { Feather } from '@expo/vector-icons';
 import GlassCard from './GlassCard';
 import { COLORS, SPACING, FONT_SIZES, RADII } from '../theme';
+import { supabase } from '../lib/supabase';
 
-const MOCK_REACTIONS = [
-  {
-    id: '1',
-    media_type: 'photo',
-    reaction: 'smiled',
-    viewed_at: new Date().toISOString().replace(/T.*/, 'T08:16:00'),
-    content_hint: 'your photo of Petaling Jaya',
-  },
-  {
-    id: '2',
-    media_type: 'video',
-    reaction: 'laughed',
-    viewed_at: new Date(Date.now() - 3600000).toISOString().replace(/T.*/, 'T07:30:00'),
-    content_hint: 'your video message',
-  },
-  {
-    id: '3',
-    media_type: 'text',
-    reaction: 'smiled',
-    viewed_at: new Date(Date.now() - 86400000).toISOString().replace(/T.*/, 'T08:10:00'),
-    content_hint: 'your morning note',
-  },
-  {
-    id: '4',
-    media_type: 'photo',
-    reaction: 'cried',
-    viewed_at: new Date(Date.now() - 172800000).toISOString().replace(/T.*/, 'T09:05:00'),
-    content_hint: 'the family reunion photo',
-  },
-];
-
-const REACTION_CONFIG = {
-  smiled: { emoji: '😊', verb: 'smiled', pastAction: 'viewed' },
-  laughed: { emoji: '😂', verb: 'laughed', pastAction: 'watched' },
-  cried: { emoji: '🥲', verb: 'was moved', pastAction: 'viewed' },
-  default: { emoji: '❤️', verb: 'loved', pastAction: 'viewed' },
+const getReactionEmoji = (type) => {
+  const formatted = type?.toLowerCase() || '';
+  if (formatted === 'smile' || formatted === 'smiled') return '😊';
+  if (formatted === 'laugh' || formatted === 'laughed') return '😂';
+  if (formatted === 'cry' || formatted === 'cried') return '🥲';
+  if (formatted === 'wave' || formatted === 'waved') return '👋';
+  if (formatted === 'read' || formatted === 'viewed') return '👀';
+  if (formatted === 'sos' || formatted === 'help') return '🚨';
+  return '❤️';
 };
+
 
 /**
  * EmotionalFeedback — Notification-style feed of reactions from the mirror.
  */
-export default function EmotionalFeedback() {
+export default function EmotionalFeedback({ profileId }) {
   const showToast = useToastStore((s) => s.showToast);
+  const [reactions, setReactions] = useState([]);
 
-  const handleLongPress = (item) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    Alert.alert(
-      'Mirror Reaction',
-      `Manage this notification from the mirror.`,
-      [
-        { text: 'Reply to Mirror', onPress: () => showToast('Reply Sent', 'Your message is on the way.', 'success') },
-        { text: 'Pin to Top', onPress: () => showToast('Pinned', 'Reaction pinned to top.', 'success') },
-        { text: 'Delete', style: 'destructive', onPress: () => showToast('Deleted', 'Reaction removed from feed.', 'info') },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
+  useEffect(() => {
+    if (!profileId) return;
+
+    // Fetch initial history
+    const fetchReactions = async () => {
+      const { data, error } = await supabase
+        .from('mirror_reactions')
+        .select('*')
+        .eq('elderly_id', profileId)
+        .eq('is_read_by_caregiver', false)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      if (!error && data) {
+        setReactions(data);
+      }
+    };
+
+    fetchReactions();
+
+    // Subscribe to new real-time reactions arriving from the mirror natively
+    const channel = supabase.channel('mirror_reactions_changes')
+      .on(
+        'postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'mirror_reactions', filter: `elderly_id=eq.${profileId}` }, 
+        (payload) => {
+          setReactions(prev => [payload.new, ...prev].slice(0, 10));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profileId]);
+
+  const handleDismiss = async (id) => {
+    // 1. Optimistically hide it from the UI instantly
+    setReactions((prev) => prev.filter(r => r.id !== id));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    // 2. Mark as read precisely in the database payload!
+    await supabase
+      .from('mirror_reactions')
+      .update({ is_read_by_caregiver: true })
+      .eq('id', id);
   };
 
   const formatTime = (dateStr) => {
@@ -76,10 +86,7 @@ export default function EmotionalFeedback() {
     return `${date.toLocaleDateString([], { month: 'short', day: 'numeric' })} ${time}`;
   };
 
-  const buildNotificationMessage = (item) => {
-    const config = REACTION_CONFIG[item.reaction] || REACTION_CONFIG.default;
-    return `Dad ${config.pastAction} ${item.content_hint} and ${config.verb}!`;
-  };
+
 
   return (
     <GlassCard style={styles.card}>
@@ -91,41 +98,45 @@ export default function EmotionalFeedback() {
         </View>
       </View>
 
-      <FlatList
-        data={MOCK_REACTIONS}
-        keyExtractor={(item) => item.id}
-        scrollEnabled={false}
-        renderItem={({ item }) => {
-          const config = REACTION_CONFIG[item.reaction] || REACTION_CONFIG.default;
-          return (
-            <TouchableOpacity 
-              style={styles.notificationRow}
-              onLongPress={() => handleLongPress(item)}
-              delayLongPress={300}
-              activeOpacity={0.7}
-            >
-              {/* Emoji avatar */}
-              <View style={styles.emojiAvatar}>
-                <Text style={styles.reactionEmoji}>{config.emoji}</Text>
-              </View>
+      {reactions.length === 0 ? (
+        <View style={{ padding: SPACING.md, alignItems: 'center' }}>
+          <Text style={{ color: COLORS.textMuted, fontSize: FONT_SIZES.sm }}>No recent reactions stored from the mirror.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={reactions}
+          keyExtractor={(item) => item.id}
+          scrollEnabled={false}
+          renderItem={({ item }) => {
+            return (
+              <View style={[styles.notificationRow, { alignItems: 'center' }]}>
+                {/* Emoji avatar */}
+                <View style={styles.emojiAvatar}>
+                  <Text style={styles.reactionEmoji}>{getReactionEmoji(item.reaction_type)}</Text>
+                </View>
 
-              {/* Notification content */}
-              <View style={styles.notificationContent}>
-                <Text style={styles.notificationMessage}>
-                  {buildNotificationMessage(item)}
-                </Text>
-                <Text style={styles.notificationTime}>{formatTime(item.viewed_at)}</Text>
-              </View>
+                {/* Notification content */}
+                <View style={styles.notificationContent}>
+                  <Text style={styles.notificationMessage}>
+                    {item.message || `Interacted with the mirror (${item.reaction_type})`}
+                  </Text>
+                  <Text style={styles.notificationTime}>{formatTime(item.created_at)}</Text>
+                </View>
 
-              {/* Unread indicator for today's items */}
-              {new Date(item.viewed_at).toDateString() === new Date().toDateString() && (
-                <View style={styles.unreadDot} />
-              )}
-            </TouchableOpacity>
-          );
-        }}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-      />
+                {/* Explicit Dismiss Button (Web Compatible!) */}
+                <TouchableOpacity 
+                  onPress={() => handleDismiss(item.id)}
+                  style={{ padding: SPACING.md, paddingRight: 0 }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Feather name="x-circle" size={20} color={COLORS.textMuted} />
+                </TouchableOpacity>
+              </View>
+            );
+          }}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+        />
+      )}
     </GlassCard>
   );
 }

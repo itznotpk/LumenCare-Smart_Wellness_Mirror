@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, FlatList, Linking, Alert, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -26,10 +26,19 @@ export default function SafetyScreen() {
   const activities = useAlertStore((s) => s.activities);
   const routineWindow = useAlertStore((s) => s.routineWindow);
   const dismissAlert = useAlertStore((s) => s.dismissAlert);
+  const fetchAlerts = useAlertStore((s) => s.fetchAlerts);
+  const fetchAlertHistory = useAlertStore((s) => s.fetchAlertHistory);
   const getActiveProfile = useProfileStore((s) => s.getActiveProfile);
   const isLoading = useProfileStore((s) => s.isLoading);
   const profile = getActiveProfile();
   const navigation = useNavigation();
+
+  // Fetch alert history on mount
+  useEffect(() => {
+    if (profile) {
+      fetchAlertHistory();
+    }
+  }, [profile?.id]);
 
   const handleCallEmergency = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -59,12 +68,11 @@ export default function SafetyScreen() {
     showToast('Coming Soon', 'Routine editing available in next update.', 'info');
   };
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1500);
+    await Promise.all([fetchAlerts(), fetchAlertHistory()]);
+    setRefreshing(false);
   };
 
   if (isLoading) {

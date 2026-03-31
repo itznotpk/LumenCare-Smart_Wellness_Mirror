@@ -10,12 +10,15 @@ import AuthNavigator from './src/navigation/AuthNavigator';
 import GlassToast from './src/components/GlassToast';
 import { useAuthStore } from './src/store/useAuthStore';
 import { useProfileStore } from './src/store/useProfileStore';
+import { useAlertStore } from './src/store/useAlertStore';
 
 export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isInitialized = useAuthStore((s) => s.isInitialized);
   const initializeAuth = useAuthStore((s) => s.initializeAuth);
   const fetchElderlies = useProfileStore((s) => s.fetchElderlies);
+  const fetchAlerts = useAlertStore((s) => s.fetchAlerts);
+  const subscribeToAlerts = useAlertStore((s) => s.subscribeToAlerts);
 
   useEffect(() => {
     initializeAuth();
@@ -24,8 +27,11 @@ export default function App() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchElderlies();
+      fetchAlerts();
+      const unsubscribe = subscribeToAlerts();
+      return () => unsubscribe?.();
     }
-  }, [isAuthenticated, fetchElderlies]);
+  }, [isAuthenticated, fetchElderlies, fetchAlerts, subscribeToAlerts]);
 
   if (!isInitialized) {
     return (

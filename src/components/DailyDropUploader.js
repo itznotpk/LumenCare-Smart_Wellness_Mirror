@@ -1,21 +1,28 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Alert, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, Alert, StyleSheet, Image, TouchableOpacity, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Video } from 'expo-av';
 import { Feather } from '@expo/vector-icons';
 import GlassCard from './GlassCard';
 import AnimatedPressable from './AnimatedPressable';
 import { COLORS, SPACING, FONT_SIZES, RADII, MIN_TAP_TARGET } from '../theme';
 import { supabase } from '../lib/supabase';
 
+const MAX_VIDEO_DURATION_SEC = 60; // hard cap at 60s for storage/bandwidth
+
 /**
  * DailyDropUploader — Modern social-media style media composer.
+ * Supports both images AND short videos (20-50s) for the Smart Wellness Mirror.
  */
 export default function DailyDropUploader({ profileId, onUpload }) {
   const [message, setMessage] = useState('');
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedMedia, setSelectedMedia] = useState(null); // { uri, type: 'image'|'video', mimeType, duration }
   const [uploading, setUploading] = useState(false);
+  const videoRef = useRef(null);
 
-  const pickImage = async (useCamera = false) => {
+  const isVideo = selectedMedia?.type === 'video';
+
+  const pickMedia = async (useCamera = false) => {
     if (useCamera) {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -23,11 +30,13 @@ export default function DailyDropUploader({ profileId, onUpload }) {
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images', 'videos'],
         allowsEditing: true,
         quality: 0.8,
+        videoMaxDuration: MAX_VIDEO_DURATION_SEC,
       });
       if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0]);
+        handleMediaSelected(result.assets[0]);
       }
     } else {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -39,42 +48,82 @@ export default function DailyDropUploader({ profileId, onUpload }) {
         mediaTypes: ['images', 'videos'],
         allowsEditing: true,
         quality: 0.8,
+        videoMaxDuration: MAX_VIDEO_DURATION_SEC,
       });
       if (!result.canceled && result.assets[0]) {
-        setSelectedImage(result.assets[0]);
+        handleMediaSelected(result.assets[0]);
       }
     }
   };
 
-  const removeImage = () => setSelectedImage(null);
+  const handleMediaSelected = (asset) => {
+    // Validate video duration
+    if (asset.type === 'video' && asset.duration) {
+      const durationSec = asset.duration / 1000; // expo returns ms
+      if (durationSec > MAX_VIDEO_DURATION_SEC) {
+        Alert.alert(
+          'Video Too Long',
+          `Please select a video under ${MAX_VIDEO_DURATION_SEC} seconds. Your video is ${Math.round(durationSec)}s.`
+        );
+        return;
+      }
+    }
+    setSelectedMedia({
+      uri: asset.uri,
+      type: asset.type || 'image',
+      mimeType: asset.mimeType || null,
+      duration: asset.duration || null,
+    });
+  };
+
+  const removeMedia = () => setSelectedMedia(null);
+
+  /**
+   * Determine the correct MIME content-type for Supabase storage upload.
+   */
+  const getContentType = (media) => {
+    if (media.mimeType) return media.mimeType;
+    const ext = (media.uri.split('.').pop() || '').toLowerCase();
+    const mimeMap = {
+      jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+      gif: 'image/gif', webp: 'image/webp', heic: 'image/heic',
+      mp4: 'video/mp4', mov: 'video/quicktime', avi: 'video/x-msvideo',
+      mkv: 'video/x-matroska', webm: 'video/webm',
+    };
+    return mimeMap[ext] || (media.type === 'video' ? 'video/mp4' : 'image/jpeg');
+  };
 
   const handleSend = async () => {
-    if (!selectedImage && !message.trim()) {
-      Alert.alert('Nothing to send', 'Please select a photo or type a message.');
+    if (!selectedMedia && !message.trim()) {
+      Alert.alert('Nothing to send', 'Please select a photo/video or type a message.');
       return;
     }
     setUploading(true);
 
     try {
       let mediaUrl = null;
+      let mediaType = 'text'; // default if no media attached
 
-      if (supabase && selectedImage) {
-        const ext = selectedImage.uri.split('.').pop() || 'jpg';
+      if (supabase && selectedMedia) {
+        const ext = selectedMedia.uri.split('.').pop() || (selectedMedia.type === 'video' ? 'mp4' : 'jpg');
         const fileName = `${profileId}/${Date.now()}.${ext}`;
 
+        // Convert local file URI to a blob for Supabase storage
         const blob = await new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
-          xhr.onload = function() { resolve(xhr.response); };
-          xhr.onerror = function() { reject(new Error('Failed to convert image to blob')); };
+          xhr.onload = function () { resolve(xhr.response); };
+          xhr.onerror = function () { reject(new Error('Failed to convert media to blob')); };
           xhr.responseType = 'blob';
-          xhr.open('GET', selectedImage.uri, true);
+          xhr.open('GET', selectedMedia.uri, true);
           xhr.send(null);
         });
+
+        const contentType = getContentType(selectedMedia);
 
         const { data: storageData, error: storageErr } = await supabase.storage
           .from('daily_drops')
           .upload(fileName, blob, {
-            contentType: selectedImage.mimeType || `image/${ext}`,
+            contentType,
             upsert: false,
           });
 
@@ -84,29 +133,36 @@ export default function DailyDropUploader({ profileId, onUpload }) {
           .from('daily_drops')
           .getPublicUrl(storageData.path);
         mediaUrl = urlData?.publicUrl || null;
+        mediaType = selectedMedia.type || 'image';
       }
 
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         const { error: dbErr } = await supabase.from('daily_drops').insert({
           caregiver_id: user?.id,
           elderly_id: profileId,
           image_url: mediaUrl,
           message_text: message.trim() || null,
+          media_type: mediaType, // 'image', 'video', or 'text'
         });
         if (dbErr) throw dbErr;
       }
 
       onUpload?.({
-        uri: selectedImage?.uri,
+        uri: selectedMedia?.uri,
         message: message.trim(),
-        type: selectedImage?.type || 'text',
+        type: selectedMedia?.type || 'text',
       });
 
-      setSelectedImage(null);
+      setSelectedMedia(null);
       setMessage('');
-      Alert.alert('Sent! 🎉', 'Your message will appear on the mirror.');
+      Alert.alert(
+        'Sent! 🎉',
+        selectedMedia?.type === 'video'
+          ? 'Your video will play on the mirror to greet your loved one!'
+          : 'Your message will appear on the mirror.'
+      );
     } catch (err) {
       console.error('Upload error:', err);
       Alert.alert('Upload Failed', err.message || 'Something went wrong. Please try again.');
@@ -118,18 +174,40 @@ export default function DailyDropUploader({ profileId, onUpload }) {
   return (
     <GlassCard style={styles.card}>
       <View style={styles.header}>
-
         <View>
           <Text style={styles.title}>Daily Drop</Text>
-          <Text style={styles.subtitle}>Send something special to the mirror</Text>
+          <Text style={styles.subtitle}>Send a photo, video, or message to the mirror</Text>
         </View>
       </View>
 
-      {/* Image Preview */}
-      {selectedImage && (
+      {/* Media Preview — Image or Video */}
+      {selectedMedia && (
         <View style={styles.previewContainer}>
-          <Image source={{ uri: selectedImage.uri }} style={styles.preview} />
-          <TouchableOpacity style={styles.removeButton} onPress={removeImage}>
+          {isVideo ? (
+            <View>
+              <Video
+                ref={videoRef}
+                source={{ uri: selectedMedia.uri }}
+                style={styles.preview}
+                resizeMode="cover"
+                shouldPlay={false}
+                isLooping={false}
+                useNativeControls
+              />
+              {/* Video badge */}
+              <View style={styles.videoBadge}>
+                <Feather name="film" size={12} color={COLORS.white} />
+                <Text style={styles.videoBadgeText}>
+                  {selectedMedia.duration
+                    ? `${Math.round(selectedMedia.duration / 1000)}s`
+                    : 'Video'}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <Image source={{ uri: selectedMedia.uri }} style={styles.preview} />
+          )}
+          <TouchableOpacity style={styles.removeButton} onPress={removeMedia}>
             <Feather name="x" size={16} color={COLORS.white} />
           </TouchableOpacity>
         </View>
@@ -139,7 +217,7 @@ export default function DailyDropUploader({ profileId, onUpload }) {
       <View style={styles.composerContainer}>
         <TextInput
           style={styles.composerInput}
-          placeholder="Type a message for Dad..."
+          placeholder="Type a message for your loved one..."
           placeholderTextColor={COLORS.textMuted}
           value={message}
           onChangeText={setMessage}
@@ -151,11 +229,11 @@ export default function DailyDropUploader({ profileId, onUpload }) {
       {/* Action Bar */}
       <View style={styles.actionBar}>
         <View style={styles.mediaButtons}>
-          <AnimatedPressable style={styles.mediaButton} onPress={() => pickImage(true)}>
+          <AnimatedPressable style={styles.mediaButton} onPress={() => pickMedia(true)}>
             <Feather name="camera" size={20} color={COLORS.primary500} />
             <Text style={styles.mediaButtonLabel}>Camera</Text>
           </AnimatedPressable>
-          <AnimatedPressable style={styles.mediaButton} onPress={() => pickImage(false)}>
+          <AnimatedPressable style={styles.mediaButton} onPress={() => pickMedia(false)}>
             <Feather name="image" size={20} color={COLORS.primary500} />
             <Text style={styles.mediaButtonLabel}>Gallery</Text>
           </AnimatedPressable>
@@ -170,6 +248,11 @@ export default function DailyDropUploader({ profileId, onUpload }) {
           <Text style={styles.sendText}>{uploading ? 'Sending...' : 'Send'}</Text>
         </AnimatedPressable>
       </View>
+
+      {/* Hint */}
+      <Text style={styles.hint}>
+        💡 Short videos (20-50s) work best — they attract your loved one to the mirror for a daily vitals scan!
+      </Text>
     </GlassCard>
   );
 }
@@ -183,9 +266,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: SPACING.md,
     marginBottom: SPACING.lg,
-  },
-  emoji: {
-    fontSize: 28,
   },
   title: {
     fontSize: FONT_SIZES.lg,
@@ -206,8 +286,9 @@ const styles = StyleSheet.create({
   },
   preview: {
     width: '100%',
-    height: 160,
+    height: 180,
     borderRadius: RADII.md,
+    backgroundColor: '#000',
   },
   removeButton: {
     position: 'absolute',
@@ -219,6 +300,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  videoBadge: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: RADII.sm,
+  },
+  videoBadgeText: {
+    color: COLORS.white,
+    fontSize: 11,
+    fontWeight: '600',
   },
 
   // Composer
@@ -280,5 +378,12 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: FONT_SIZES.md,
     fontWeight: '700',
+  },
+  hint: {
+    marginTop: SPACING.md,
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textMuted,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

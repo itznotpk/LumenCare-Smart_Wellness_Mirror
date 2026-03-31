@@ -64,3 +64,11 @@ npx expo start --clear
 1. **Download Expo Go** on your physical iOS or Android device.
 2. Scan the **QR Code** generated natively inside your terminal footprint. 
 3. The app will remotely compile and deploy directly onto your mobile architecture!
+
+## 🆕 Recent Updates
+
+*   **AI Health Summary Integrated:** Introduced a new component providing intelligent, AI-driven summaries of patient wellness metrics based on heart rate, respiratory data, and HRV trends.
+*   **Enhanced Media Support (Daily Drops):** Integrated `expo-av` to support a wider range of media formats. Caregivers can now share more dynamic content with the Smart Mirror. 
+*   **Real-time Safety Alert Infrastructure:** Deployed new Supabase reaction triggers and state management through `useAlertStore.js`, providing robust and immediate notifications for critical wellness events like fall detection.
+*   **UI Emotional Feedback Tracking:** Added a behavioral analysis module to the dashboard, allowing caregivers to monitor patient psyche and emotional states alongside physiological vitals.
+*   **Backend Scalability & Security:** Added specialized SQL schema scripts for Row Level Security (RLS) policies and dedicated media type handling to optimize cloud storage stability.

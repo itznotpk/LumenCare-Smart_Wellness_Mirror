@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { ScrollView, View, Text, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import GlassCard from '../components/GlassCard';
 import AnimatedPressable from '../components/AnimatedPressable';
 import MetricToggle from '../components/MetricToggle';
@@ -33,8 +33,25 @@ const TIME_RANGES = [
  * Merged wellness + vital charts under a unified time range toggle.
  */
 export default function TrendsScreen() {
+  const route = useRoute();
   const [selectedMetric, setSelectedMetric] = useState('hr');
   const [timeRange, setTimeRange] = useState('1W');
+
+  // Deep-link: when navigating from Dashboard vital cards, pre-select the metric
+  const scrollRef = useRef(null);
+  const vitalMetricsSectionRef = useRef(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (route.params?.metric && METRIC_CONFIG[route.params.metric]) {
+        setSelectedMetric(route.params.metric);
+        // Scroll to the Vital Metrics chart section after a short delay for layout
+        setTimeout(() => {
+          scrollRef.current?.scrollTo({ y: 400, animated: true });
+        }, 300);
+      }
+    }, [route.params?.metric])
+  );
   const [refreshing, setRefreshing] = useState(false);
   const [selectedDate1D, setSelectedDate1D] = useState(() => {
     const d = new Date();
@@ -170,6 +187,7 @@ export default function TrendsScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}

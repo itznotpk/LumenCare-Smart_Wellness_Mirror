@@ -1,8 +1,8 @@
 /**
- * useActivityFeed — Fetches and subscribes to the `activity_log` table.
+ * useActivityFeed — Fetches and subscribes to the `activity_events` table.
  *
  * - DEMO MODE: no-op, store already has mock activities.
- * - LIVE MODE: fetches today's events on mount, then subscribes for INSERT.
+ * - LIVE MODE: fetches recent events on mount, then subscribes for INSERT.
  *
  * Usage: Call inside SafetyScreen (or once at a higher level).
  */
@@ -16,57 +16,47 @@ export function useActivityFeed() {
 
   const setActivities = useAlertStore((s) => s.setActivities);
   const addActivity = useAlertStore((s) => s.addActivity);
-  const setActiveAlert = useAlertStore((s) => s.setActiveAlert);
   const activeProfileId = useProfileStore((s) => s.activeProfileId);
 
-  // ─── Initial fetch: today's activity log ─────────────────────────────────
+  // ─── Initial fetch: recent activity events ─────────────────────────────
   useEffect(() => {
     if (IS_DEMO_MODE || !supabase) return;
 
     let cancelled = false;
 
     async function fetchActivities() {
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
+      // Fetch last 7 days of activity (not just today)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
       const { data, error } = await supabase
-        .from('activity_log')
+        .from('activity_events')
         .select('*')
-        .eq('profile_id', activeProfileId)
-        .gte('occurred_at', startOfDay.toISOString())
+        .gte('occurred_at', sevenDaysAgo.toISOString())
         .order('occurred_at', { ascending: false })
         .limit(50);
 
       if (!cancelled && !error && data) {
-        setActivities(data);
-      }
-    }
-
-    // Also fetch latest active alert
-    async function fetchActiveAlert() {
-      const { data, error } = await supabase
-        .from('alerts')
-        .select('*')
-        .eq('profile_id', activeProfileId)
-        .eq('alert_status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!cancelled && !error) {
-        setActiveAlert(data || null);
+        const formatted = data.map(a => ({
+          id: a.id,
+          event_type: a.event_type,
+          description: a.description,
+          vitals_status: a.severity === 'critical' ? 'danger' : a.severity === 'warning' ? 'warning' : 'stable',
+          occurred_at: a.occurred_at,
+          source_table: a.source_table,
+        }));
+        setActivities(formatted);
       }
     }
 
     fetchActivities();
-    fetchActiveAlert();
 
     return () => {
       cancelled = true;
     };
   }, [activeProfileId]);
 
-  // ─── Realtime: activity_log INSERT ───────────────────────────────────────
+  // ─── Realtime: activity_events INSERT ───────────────────────────────────
   useEffect(() => {
     if (IS_DEMO_MODE || !supabase) return;
 
@@ -75,52 +65,24 @@ export function useActivityFeed() {
     }
 
     const channel = supabase
-      .channel(`activity:profile_id=eq.${activeProfileId}`)
+      .channel('activity-events-realtime')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'activity_log',
-          filter: `profile_id=eq.${activeProfileId}`,
+          table: 'activity_events',
         },
         (payload) => {
-          addActivity(payload.new);
-        }
-      )
-      // Also listen for new alerts
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'alerts',
-          filter: `profile_id=eq.${activeProfileId}`,
-        },
-        (payload) => {
-          const alert = payload.new;
-          if (alert.alert_status === 'active') {
-            setActiveAlert(alert);
-          }
-        }
-      )
-      // Listen for alert status updates (resolved/dismissed by mirror)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'alerts',
-          filter: `profile_id=eq.${activeProfileId}`,
-        },
-        (payload) => {
-          const alert = payload.new;
-          if (alert.alert_status !== 'active') {
-            // Clear the banner if the alert was resolved externally
-            setActiveAlert((prev) =>
-              prev?.id === alert.id ? null : prev
-            );
-          }
+          const a = payload.new;
+          addActivity({
+            id: a.id,
+            event_type: a.event_type,
+            description: a.description,
+            vitals_status: a.severity === 'critical' ? 'danger' : a.severity === 'warning' ? 'warning' : 'stable',
+            occurred_at: a.occurred_at,
+            source_table: a.source_table,
+          });
         }
       )
       .subscribe();

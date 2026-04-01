@@ -55,7 +55,6 @@ export default function PrivacyControls() {
           <Feather name="sun" size={18} color={COLORS.textSecondary} />
           <View>
             <Text style={styles.rowLabel}>Mirror Brightness</Text>
-            <Text style={styles.rowSubtext}>{profile.mirror_brightness}%</Text>
           </View>
         </View>
         <View style={styles.brightnessControls}>

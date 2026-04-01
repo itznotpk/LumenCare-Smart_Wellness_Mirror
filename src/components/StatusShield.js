@@ -45,6 +45,7 @@ export default function StatusShield({
   message,
   onNudge,
   profile,
+  hideActions = false,
 }) {
   const config = STATUS_CONFIG[status];
   const breathe = useSharedValue(1);
@@ -133,15 +134,17 @@ export default function StatusShield({
       </View>
 
       {/* ── Middle Section: Status Message ─────────────── */}
-      <View style={[styles.messageBox, { backgroundColor: config.bgColor }]}>
-        <Feather name={config.icon} size={20} color={config.color} style={{ marginTop: 2 }} />
-        <Text style={[styles.messageText, { color: config.textColor }]} accessibilityRole="text">
-          {message}
-        </Text>
-      </View>
+      {message ? (
+        <View style={[styles.messageBox, { backgroundColor: config.bgColor }]}>
+          <Feather name={config.icon} size={20} color={config.color} style={{ marginTop: 2 }} />
+          <Text style={[styles.messageText, { color: config.textColor }]} accessibilityRole="text">
+            {message}
+          </Text>
+        </View>
+      ) : null}
 
       {/* ── Bottom Section: Action Buttons ─────────────── */}
-      {(status === 'yellow' || status === 'red') && (
+      {(status === 'yellow' || status === 'red') && !hideActions && (
         <View style={styles.actionButtons}>
           <AnimatedPressable
             style={[styles.actionButton, styles.callButton]}

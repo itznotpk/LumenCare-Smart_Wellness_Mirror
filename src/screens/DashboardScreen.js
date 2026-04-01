@@ -6,9 +6,12 @@ import StatusShield from '../components/StatusShield';
 import VitalCard from '../components/VitalCard';
 import WellnessScoreCard from '../components/WellnessScoreCard';
 import GlassCard from '../components/GlassCard';
-import AIHealthSummary, { LumenAskInput } from '../components/AIHealthSummary';
+import AIHealthSummary from '../components/AIHealthSummary';
+import LumenChat from '../components/LumenChat';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
+import { AlertTriangle, PhoneCall } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useVitalsStore } from '../store/useVitalsStore';
 import { useProfileStore } from '../store/useProfileStore';
 import { useToastStore } from '../store/useToastStore';
@@ -370,22 +373,8 @@ export default function DashboardScreen() {
     );
   };
 
-  const getHRStatus = (hr) => {
-    if (hr < 50 || hr > 120) return 'red';
-    if (hr < 55 || hr > 100) return 'yellow';
-    return 'green';
-  };
-
-  const getHRVStatus = (hrv) => {
-    if (hrv < 15) return 'red';
-    if (hrv < 25) return 'yellow';
-    return 'green';
-  };
-
-  const getRRStatus = (rr) => {
-    if (rr < 8 || rr > 25) return 'red';
-    if (rr < 10 || rr > 22) return 'yellow';
-    return 'green';
+  const handleAnimatedNavigation = (metric) => {
+    navigation.navigate('Trends', { metric });
   };
 
   // Compute wellness delta
@@ -424,22 +413,23 @@ export default function DashboardScreen() {
         {/* ── URGENT: Fall Detection Banner ── */}
         {activeAlert && activeAlert.alert_status === 'active' && (
           <View style={{ marginBottom: SPACING.md }}>
-            <View style={styles.fallBanner}>
+            <LinearGradient
+              colors={['#EF4444', '#F43F5E']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.fallBanner}
+            >
               <View style={styles.fallBannerHeader}>
-                <Feather name="alert-triangle" size={22} color="#fff" />
-                <Text style={styles.fallBannerTitle}>
-                  {activeAlert.alert_type === 'Fall_Detected' ? '⚠️ FALL DETECTED' : '⚠️ SAFETY ALERT'}
-                </Text>
+                <AlertTriangle size={24} color="#fff" strokeWidth={2.5} />
+                <Text style={styles.fallBannerTitle}>SAFETY ALERT</Text>
               </View>
-              <Text style={styles.fallBannerMessage}>
-                {activeAlert.message || `${activeAlert.alert_type} — Severity: ${activeAlert.severity}`}
-              </Text>
-              {activeAlert.elderly_name && (
-                <Text style={styles.fallBannerPatient}>Patient: {activeAlert.elderly_name}</Text>
-              )}
+              
+              <Text style={styles.fallBannerMainText}>Fall Detected!</Text>
+              
               <Text style={styles.fallBannerTime}>
-                {new Date(activeAlert.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                {new Date(activeAlert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).replace(/^0/, '')} · {new Date(activeAlert.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
               </Text>
+
               <View style={styles.fallBannerActions}>
                 <TouchableOpacity
                   style={styles.fallBannerCallBtn}
@@ -451,31 +441,33 @@ export default function DashboardScreen() {
                     ]);
                   }}
                 >
-                  <Feather name="phone-call" size={18} color={COLORS.red} />
+                  <PhoneCall size={20} color="#E11D48" strokeWidth={2.5} />
                   <Text style={styles.fallBannerCallText}>Call Emergency</Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
-                  style={styles.fallBannerDismissBtn}
+                  style={styles.fallBannerResolveBtn}
                   onPress={() => {
                     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
                     dismissAlert();
                     showToast('Alert Resolved', 'The safety alert has been marked as resolved.', 'success');
                   }}
                 >
-                  <Text style={styles.fallBannerDismissText}>Resolve</Text>
+                  <Text style={styles.fallBannerResolveText}>Mark as Resolved</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </LinearGradient>
           </View>
         )}
 
         {/* ── Status Shield Profile Widget ── */}
         <View onLayout={(e) => { shieldY.current = e.nativeEvent.layout.y; }}>
           <StatusShield
-            status={overallStatus}
-            message={statusMessage}
+            status={activeAlert ? 'red' : overallStatus}
+            message={activeAlert ? null : statusMessage}
             onNudge={handleNudge}
             profile={profile}
+            hideActions={!!activeAlert}
           />
         </View>
 
@@ -646,13 +638,13 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            {/* Lumen CareGuide — bottom of home tab */}
+            {/* Lumen CareGuide — AI health summary from health_insights */}
             <View onLayout={(e) => { aiSummaryY.current = e.nativeEvent.layout.y; }}>
               <AIHealthSummary />
             </View>
 
-            {/* Ask Lumen IQ — separate typable input */}
-            <LumenAskInput />
+            {/* Lumen IQ Chat — Real-time conversation segment */}
+            <LumenChat />
           </View>
         )}
       </ScrollView>
@@ -849,71 +841,74 @@ const styles = StyleSheet.create({
   },
   // ── Fall Detection Banner ──
   fallBanner: {
-    backgroundColor: '#DC2626',
     borderRadius: RADII.lg,
-    padding: SPACING.lg,
-    shadowColor: '#DC2626',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: 18,
+    shadowColor: '#EF4444',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
   },
   fallBannerHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
-    marginBottom: SPACING.sm,
   },
   fallBannerTitle: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: '900',
+    fontSize: 12,
+    fontWeight: '800',
     color: '#fff',
-    letterSpacing: 0.5,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    opacity: 0.9,
   },
-  fallBannerMessage: {
-    fontSize: FONT_SIZES.md,
-    color: 'rgba(255,255,255,0.9)',
-    marginBottom: SPACING.xs,
-    lineHeight: 22,
-  },
-  fallBannerPatient: {
-    fontSize: FONT_SIZES.sm,
-    color: 'rgba(255,255,255,0.75)',
+  fallBannerMainText: {
+    fontSize: 22,
     fontWeight: '600',
-    marginBottom: SPACING.xs,
+    color: '#fff',
+    marginTop: 4,
+    letterSpacing: -0.2,
   },
   fallBannerTime: {
-    fontSize: FONT_SIZES.xs,
-    color: 'rgba(255,255,255,0.6)',
-    marginBottom: SPACING.md,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '500',
+    marginTop: 1,
+    marginBottom: SPACING.lg,
   },
   fallBannerActions: {
-    flexDirection: 'row',
-    gap: SPACING.md,
+    flexDirection: 'column',
+    width: '100%',
   },
   fallBannerCallBtn: {
-    flex: 1,
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: SPACING.sm,
     backgroundColor: '#fff',
-    borderRadius: RADII.md,
-    paddingVertical: SPACING.md,
+    borderRadius: RADII.full,
+    paddingVertical: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   fallBannerCallText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '800',
-    color: '#DC2626',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#E11D48', // rose-600
   },
-  fallBannerDismissBtn: {
+  fallBannerResolveBtn: {
+    width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: SPACING.lg,
+    paddingTop: 14,
   },
-  fallBannerDismissText: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.8)',
+  fallBannerResolveText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.85)',
   },
 });

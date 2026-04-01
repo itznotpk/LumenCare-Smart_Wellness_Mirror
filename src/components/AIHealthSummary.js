@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useSharedValue,
@@ -13,6 +14,7 @@ import Animated, {
 import { supabase } from '../lib/supabase';
 import { useProfileStore } from '../store/useProfileStore';
 import { useVitalsStore } from '../store/useVitalsStore';
+import { useToastStore } from '../store/useToastStore';
 import { COLORS, SPACING, FONT_SIZES, RADII, SHADOWS } from '../theme';
 
 const RISK_BADGE = {
@@ -282,88 +284,6 @@ export default function AIHealthSummary() {
     </Animated.View>
   );
 }
-
-/**
- * LumenAskInput — Separate "Ask Lumen IQ" input container.
- * Rendered outside the CareGuide card in DashboardScreen.
- */
-export function LumenAskInput({ scrollRef }) {
-  const [query, setQuery] = useState('');
-
-  const handleFocus = () => {
-    // Auto-scroll to bottom so the input stays visible above the keyboard
-    setTimeout(() => {
-      scrollRef?.current?.scrollToEnd?.({ animated: true });
-    }, 300);
-  };
-
-  return (
-    <View style={askStyles.container}>
-      <View style={askStyles.inputRow}>
-        <Feather name="message-circle" size={16} color={COLORS.primary500} style={{ marginRight: 10 }} />
-        <TextInput
-          style={askStyles.input}
-          placeholder="Ask Lumen..."
-          placeholderTextColor={COLORS.textMuted}
-          value={query}
-          onChangeText={setQuery}
-          onFocus={handleFocus}
-          returnKeyType="send"
-          onSubmitEditing={() => {
-            if (query.trim()) {
-              setQuery('');
-            }
-          }}
-        />
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => {
-            if (query.trim()) {
-              setQuery('');
-            }
-          }}
-          style={askStyles.sendButton}
-        >
-          <Feather name="send" size={14} color={COLORS.white} />
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-const askStyles = StyleSheet.create({
-  container: {
-    marginTop: SPACING.md,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.card,
-    borderRadius: RADII.lg,
-    paddingVertical: 6,
-    paddingHorizontal: SPACING.md,
-    borderWidth: 1,
-    borderColor: 'rgba(191,219,254,0.5)',
-    shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-    color: COLORS.textPrimary,
-    paddingVertical: 10,
-  },
-  sendButton: {
-    backgroundColor: COLORS.primary500,
-    borderRadius: RADII.full,
-    padding: 8,
-    marginLeft: 8,
-  },
-});
 
 const styles = StyleSheet.create({
   externalTitleRow: {

@@ -4,7 +4,6 @@ import * as Haptics from 'expo-haptics';
 import { Feather } from '@expo/vector-icons';
 import DailyDropUploader from '../components/DailyDropUploader';
 import EmotionalFeedback from '../components/EmotionalFeedback';
-import PrivacyControls from '../components/PrivacyControls';
 import GlassCard from '../components/GlassCard';
 import { useProfileStore } from '../store/useProfileStore';
 import { useToastStore } from '../store/useToastStore';
@@ -75,11 +74,6 @@ export default function FamilyScreen() {
       {/* Emotional Feedback Loop */}
       <View style={styles.section}>
         <EmotionalFeedback profileId={profile?.id} />
-      </View>
-
-      {/* Privacy Controls */}
-      <View style={styles.section}>
-        <PrivacyControls />
       </View>
     </ScrollView>
   );

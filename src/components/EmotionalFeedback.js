@@ -94,7 +94,6 @@ export default function EmotionalFeedback({ profileId }) {
 
         <View>
           <Text style={styles.title}>Mirror Reactions</Text>
-          <Text style={styles.subtitle}>Notifications from the mirror</Text>
         </View>
       </View>
 
@@ -158,10 +157,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.lg,
     fontWeight: '700',
     color: COLORS.textPrimary,
-  },
-  subtitle: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textMuted,
   },
 
   // Notification rows

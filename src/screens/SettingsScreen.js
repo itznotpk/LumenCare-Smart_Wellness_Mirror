@@ -48,6 +48,13 @@ export default function SettingsScreen() {
   const [addGender, setAddGender] = useState('');
   const [showAddDatePicker, setShowAddDatePicker] = useState(false);
   const [addConditions, setAddConditions] = useState('');
+
+  const [contactModalVisible, setContactModalVisible] = useState(false);
+  const [editingContact, setEditingContact] = useState(null);
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactRelation, setContactRelation] = useState('');
+  const [contactPrimary, setContactPrimary] = useState(false);
   
   const showToast = useToastStore((s) => s.showToast);
   const logout = useAuthStore((s) => s.logout);
@@ -63,6 +70,9 @@ export default function SettingsScreen() {
 
   // Settings store
   const emergencyContacts = useSettingsStore((s) => s.emergencyContacts);
+  const fetchEmergencyContacts = useSettingsStore((s) => s.fetchEmergencyContacts);
+  const addEmergencyContact = useSettingsStore((s) => s.addEmergencyContact);
+  const updateStoreContact = useSettingsStore((s) => s.updateEmergencyContact);
   const escalation = useSettingsStore((s) => s.escalation);
   const updateEscalation = useSettingsStore((s) => s.updateEscalation);
   const notifications = useSettingsStore((s) => s.notifications);
@@ -83,6 +93,12 @@ export default function SettingsScreen() {
   useEffect(() => {
     fetchCaregiverProfile();
   }, [fetchCaregiverProfile]);
+
+  useEffect(() => {
+    if (activeProfileId) {
+      fetchEmergencyContacts(activeProfileId);
+    }
+  }, [activeProfileId, fetchEmergencyContacts]);
 
   // ── Helpers ─────────────────────────────────────────────────────────────
   const getInitials = (name) => {
@@ -193,22 +209,79 @@ export default function SettingsScreen() {
       'This person will no longer receive emergency alerts.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => removeEmergencyContact(id) },
+        { 
+          text: 'Remove', 
+          style: 'destructive', 
+          onPress: async () => {
+            const res = await removeEmergencyContact(id);
+            if (res.success) {
+              showToast('Contact Removed', `${name} is no longer on the alert list.`, 'success');
+            }
+          } 
+        },
       ]
     );
   };
 
-  const handleAddContact = () => {
-    showToast('Coming Soon', 'Contact management available in next update.', 'info');
+  const openContactModal = (contact = null) => {
+    if (contact) {
+      setEditingContact(contact);
+      setContactName(contact.name);
+      setContactPhone(contact.phone);
+      setContactRelation(contact.relationship || '');
+      setContactPrimary(contact.is_primary);
+    } else {
+      setEditingContact(null);
+      setContactName('');
+      setContactPhone('');
+      setContactRelation('');
+      setContactPrimary(false);
+    }
+    setContactModalVisible(true);
+  };
+
+  const handleSaveContact = async () => {
+    if (!contactName.trim() || !contactPhone.trim()) {
+      showToast('Missing Info', 'Name and Phone are required.', 'error');
+      return;
+    }
+    
+    let result;
+    if (editingContact) {
+      // Update logic
+      result = await updateStoreContact(editingContact.id, {
+        name: contactName.trim(),
+        phone: contactPhone.trim(),
+        relationship: contactRelation.trim(),
+        is_primary: contactPrimary,
+      }, activeProfileId);
+    } else {
+      // Create logic
+      result = await addEmergencyContact(
+        activeProfileId,
+        contactName.trim(),
+        contactPhone.trim(),
+        contactRelation.trim(),
+        contactPrimary
+      );
+    }
+
+    if (result.success) {
+      setContactModalVisible(false);
+      showToast(editingContact ? 'Contact Updated' : 'Contact Added', 'Changes applied successfully.', 'success');
+    } else {
+      showToast('Failed', result.error || 'Could not save contact.', 'error');
+    }
   };
 
   const onRefresh = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
-    setTimeout(() => {
+    if (activeProfileId) {
+      fetchEmergencyContacts(activeProfileId).finally(() => setRefreshing(false));
+    } else {
       setRefreshing(false);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }, 1500); // 1.5s simulated loading delay
+    }
   };
 
   // ── Render ──────────────────────────────────────────────────────────────
@@ -397,27 +470,32 @@ export default function SettingsScreen() {
             )}
             overshootRight={false}
           >
-            <View style={styles.contactRow}>
-              <View style={[styles.contactAvatar, contact.isPrimary && styles.contactAvatarPrimary]}>
-                <Text style={[styles.contactAvatarText, contact.isPrimary && { color: COLORS.white }]}>
+            <TouchableOpacity 
+              style={styles.contactRow} 
+              onPress={() => openContactModal(contact)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.contactAvatar, contact.is_primary && styles.contactAvatarPrimary]}>
+                <Text style={[styles.contactAvatarText, contact.is_primary && { color: COLORS.white }]}>
                   {getInitials(contact.name)}
                 </Text>
               </View>
               <View style={styles.contactInfo}>
                 <View style={styles.contactNameRow}>
                   <Text style={styles.contactName}>{contact.name}</Text>
-                  {contact.isPrimary && (
+                  {contact.is_primary && (
                     <View style={styles.primaryBadge}>
                       <Text style={styles.primaryBadgeText}>PRIMARY</Text>
                     </View>
                   )}
                 </View>
-                <Text style={styles.contactPhone}>{contact.phone}</Text>
+                <Text style={styles.contactPhone}>{contact.phone}{contact.relationship ? ` • ${contact.relationship}` : ''}</Text>
               </View>
-            </View>
+              <Feather name="chevron-right" size={16} color={COLORS.textMuted} />
+            </TouchableOpacity>
           </Swipeable>
         ))}
-        <TouchableOpacity style={styles.addContactButton} onPress={handleAddContact}>
+        <TouchableOpacity style={styles.addContactButton} onPress={() => openContactModal()}>
           <Feather name="plus-circle" size={18} color={COLORS.primary500} />
           <Text style={styles.addContactText}>Add Emergency Contact</Text>
         </TouchableOpacity>
@@ -821,6 +899,76 @@ export default function SettingsScreen() {
                 <Text style={styles.modalSaveText}>Register</Text>
               </TouchableOpacity>
             </View>
+              </ScrollView>
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Contact Management Modal (Add/Edit) ────────────────────────── */}
+      <Modal
+        visible={contactModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setContactModalVisible(false)}
+      >
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <Pressable style={{ flex: 1, justifyContent: 'flex-end' }} onPress={() => setContactModalVisible(false)}>
+            <Pressable style={styles.modalContent} onPress={(e) => e.stopPropagation()}>
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                <View style={styles.modalHandle} />
+                <Text style={styles.modalTitle}>{editingContact ? 'Edit Contact' : 'Add Emergency Contact'}</Text>
+
+                <Text style={styles.inputLabel}>Full Name</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={contactName}
+                  onChangeText={setContactName}
+                  placeholder="e.g. John Doe"
+                  placeholderTextColor={COLORS.textMuted}
+                />
+
+                <Text style={styles.inputLabel}>Relationship</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={contactRelation}
+                  onChangeText={setContactRelation}
+                  placeholder="e.g. Son, Daughter, Caretaker"
+                  placeholderTextColor={COLORS.textMuted}
+                />
+
+                <Text style={styles.inputLabel}>Phone Number</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={contactPhone}
+                  onChangeText={setContactPhone}
+                  placeholder="+60 12-345 6789"
+                  keyboardType="phone-pad"
+                  placeholderTextColor={COLORS.textMuted}
+                />
+
+                <View style={styles.timerRow}>
+                   <Text style={[styles.timerLabel, { flex: 1 }]}>Set as Primary Contact</Text>
+                   <Switch 
+                     value={contactPrimary} 
+                     onValueChange={setContactPrimary}
+                     trackColor={{ false: COLORS.border, true: COLORS.primary500 + '60' }}
+                     thumbColor={contactPrimary ? COLORS.primary500 : COLORS.textMuted}
+                   />
+                </View>
+
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={styles.modalCancel}
+                    onPress={() => setContactModalVisible(false)}
+                  >
+                    <Text style={styles.modalCancelText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.modalSave} onPress={handleSaveContact}>
+                    <Feather name="check" size={18} color={COLORS.white} />
+                    <Text style={styles.modalSaveText}>{editingContact ? 'Save Changes' : 'Add Contact'}</Text>
+                  </TouchableOpacity>
+                </View>
               </ScrollView>
             </Pressable>
           </Pressable>

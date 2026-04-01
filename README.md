@@ -35,9 +35,8 @@
 | [What This System Does](#-what-this-system-does) | Core capabilities and use cases |
 | [Caregiver Workflow](#-caregiver-workflow) | Visualizing the real-time alert cycle |
 | [Key Features](#-key-features) | Real-time monitoring, AI summaries, and media sharing |
-| [Security & Privacy](#-security--data-privacy) | Institutional-grade data safety standards |
 | [Tech Stack](#-tech-stack--core-dependencies) | Technologies and frameworks used |
-| [Project Structure](#-project-structure) | Detailed folder and file organization |
+| [Project Structure](#-project-structure) | Folder and file organization |
 | [Database Schema](#-database-schema) | SQL structure for Vitals, Chat, and Alerts |
 | [Quick Start](#-setup--installation) | Installation and setup guide |
 
@@ -89,17 +88,6 @@ sequenceDiagram
 
 ---
 
-## 🛡 Security & Data Privacy
-
-| Security Vector | Implementation Mechanism |
-| :--- | :--- |
-| **Data Isolation** | PostgreSQL Row Level Security (RLS) ensures caregivers ONLY access data for their registered dependants. |
-| **Identity Management** | Tokens handled via Supabase Auth (JWT) with encrypted local storage for session persistence. |
-| **Encrypted Transit** | All health payloads (vitals, reactions) are delivered via TLS 1.3 secured channels. |
-| **Media Safety** | "Daily Drops" use short-lived Signed URLs for all shared images to prevent unauthorized access. |
-
----
-
 ## 🛠 Tech Stack & Core Dependencies
 
 | Category | Component / Technology |
@@ -133,7 +121,8 @@ LumenCare/
 │   │   └── SafetyScreen.js    # Emergency alert and fall detection monitor
 │   ├── store/                 # Global state orchestration via Zustand
 │   │   ├── useVitalsStore.js  # Real-time health data sync and buffering
-│   │   └── useProfileStore.js # Cross-patient profile orchestration
+│   │   ├── useProfileStore.js # Cross-patient profile orchestration
+│   │   └── useSettingsStore.js# Dynamic safety and app preferences sync
 │   ├── theme/                 # Global Design tokens (Colors, Spacing, Radii)
 │   └── navigation/            # Native navigation stack and tab definitions
 └── README.md

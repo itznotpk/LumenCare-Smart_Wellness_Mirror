@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ScrollView, View, Text, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, Easing } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import TimelineItem from '../components/TimelineItem';
 import RoutineConfig from '../components/RoutineConfig';
@@ -11,7 +12,7 @@ import { useToastStore } from '../store/useToastStore';
 import { useAlertStore } from '../store/useAlertStore';
 import { useProfileStore } from '../store/useProfileStore';
 import PrivacyControls from '../components/PrivacyControls';
-import { COLORS, SPACING, FONT_SIZES, RADII, SHADOWS } from '../theme';
+import { COLORS, SPACING, FONT_SIZES, RADII, SHADOWS, FONTS } from '../theme';
 import * as Haptics from 'expo-haptics';
 import { useActivityFeed } from '../hooks/useActivityFeed';
 
@@ -24,6 +25,7 @@ export default function SafetyScreen() {
 
   const activities = useAlertStore((s) => s.activities);
   const learnedRoutines = useAlertStore((s) => s.learnedRoutines);
+  const activeAlert = useAlertStore((s) => s.activeAlert);
   const fetchAlerts = useAlertStore((s) => s.fetchAlerts);
   const fetchActivityEvents = useAlertStore((s) => s.fetchActivityEvents);
   const fetchLearnedRoutines = useAlertStore((s) => s.fetchLearnedRoutines);
@@ -34,6 +36,8 @@ export default function SafetyScreen() {
   const profile = getActiveProfile();
   const navigation = useNavigation();
 
+  // ... (rest of logic remains same, just updating styles below)
+
   // Modal State for Routine Editing
   const [isEditModalVisible, setEditModalVisible] = useState(false);
   const [editingRoutine, setEditingRoutine] = useState(null);
@@ -43,9 +47,9 @@ export default function SafetyScreen() {
 
   // Fetch activity events and learned routines on mount
   useEffect(() => {
-    if (profile) {
-      fetchActivityEvents();
-      fetchLearnedRoutines();
+    if (profile?.id) {
+      fetchActivityEvents(profile.id);
+      fetchLearnedRoutines(profile.id);
     }
   }, [profile?.id]);
 
@@ -87,7 +91,13 @@ export default function SafetyScreen() {
   const onRefresh = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
-    await Promise.all([fetchAlerts(), fetchActivityEvents(), fetchLearnedRoutines()]);
+    if (profile?.id) {
+      await Promise.all([
+        fetchAlerts(), 
+        fetchActivityEvents(profile.id), 
+        fetchLearnedRoutines(profile.id)
+      ]);
+    }
     setRefreshing(false);
   };
 

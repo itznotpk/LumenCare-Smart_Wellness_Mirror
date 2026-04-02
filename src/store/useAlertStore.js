@@ -59,10 +59,14 @@ export const useAlertStore = create((set, get) => ({
    * Fetch activity timeline events from the unified activity_events table.
    * This table is auto-populated by triggers on vitals, safety_alerts, and daily_drops.
    */
-  fetchActivityEvents: async () => {
+  fetchActivityEvents: async (profileId) => {
+    if (!profileId) return;
+    set({ activities: [] });
+    
     const { data, error } = await supabase
       .from('activity_events')
       .select('*')
+      .eq('elderly_id', profileId)
       .order('occurred_at', { ascending: false })
       .limit(50);
 
@@ -87,10 +91,14 @@ export const useAlertStore = create((set, get) => ({
    * Fetch AI-learned routines from the learned_routines table.
    * These are auto-seeded on elderly registration and refined by vitals analysis.
    */
-  fetchLearnedRoutines: async () => {
+  fetchLearnedRoutines: async (profileId) => {
+    if (!profileId) return;
+    set({ learnedRoutines: [] });
+
     const { data, error } = await supabase
       .from('learned_routines')
       .select('*')
+      .eq('elderly_id', profileId)
       .eq('is_active', true)
       .order('expected_start', { ascending: true });
 

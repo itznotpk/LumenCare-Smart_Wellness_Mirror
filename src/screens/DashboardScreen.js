@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ScrollView, View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform, Modal, RefreshControl, Pressable } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withSequence, withTiming, runOnJS } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withSequence, withTiming, runOnJS, withRepeat, Easing, interpolate } from 'react-native-reanimated';
 import StatusShield from '../components/StatusShield';
 import VitalCard from '../components/VitalCard';
 import WellnessScoreCard from '../components/WellnessScoreCard';
@@ -17,13 +17,33 @@ import { useProfileStore } from '../store/useProfileStore';
 import { useToastStore } from '../store/useToastStore';
 import { useAlertStore } from '../store/useAlertStore';
 import { getVitalTranslation, getWellnessLabel } from '../utils/wellness';
-import { COLORS, SPACING, FONT_SIZES, RADII } from '../theme';
+import { COLORS, SPACING, FONT_SIZES, RADII, ANIMATIONS } from '../theme';
 import * as Haptics from 'expo-haptics';
 import { useRealtimeVitals } from '../hooks/useRealtimeVitals';
 import { supabase } from '../lib/supabase';
 
 // Animated touchable for card press animation
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+
+/** Internal component for subtle heartbeat animation */
+function HeartbeatPulse({ children }) {
+  const pulse = useSharedValue(1);
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1.2, { duration: 400, easing: Easing.out(Easing.ease) }),
+        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      true
+    );
+  }, []);
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }],
+    opacity: interpolate(pulse.value, [1, 1.2], [1, 0.8]),
+  }));
+  return <Animated.View style={style}>{children}</Animated.View>;
+}
 
 /** Returns a relative time string like "3 min ago" from an ISO timestamp */
 function getRelativeTime(isoString) {
@@ -45,9 +65,9 @@ function getActivityStatus(isoString) {
   if (!isoString) return { color: '#AEAEB2', label: 'Offline', icon: 'wifi-off' };
   const diffMs = Date.now() - new Date(isoString).getTime();
   const mins = diffMs / 60000;
-  if (mins < 10) return { color: '#34C759', label: 'Active', icon: 'check-circle' };
-  if (mins < 60) return { color: '#FF9500', label: 'Away', icon: 'clock' };
-  return { color: '#AEAEB2', label: 'Offline', icon: 'wifi-off' };
+  if (mins < 10) return { color: COLORS.green, label: 'Active', icon: 'check-circle' };
+  if (mins < 60) return { color: COLORS.yellow, label: 'Away', icon: 'clock' };
+  return { color: COLORS.textMuted, label: 'Offline', icon: 'wifi-off' };
 }
 
 /**
@@ -466,7 +486,7 @@ export default function DashboardScreen() {
         <View onLayout={(e) => { shieldY.current = e.nativeEvent.layout.y; }}>
           <StatusShield
             status={activeAlert ? 'red' : overallStatus}
-            lastUpdateTime={latestVitals?.recorded_at ? new Date(latestVitals.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null}
+            lastUpdateTime={latestVitals?.recorded_at}
             onNudge={handleNudge}
             profile={profile}
             hideActions={!!activeAlert}
@@ -506,13 +526,15 @@ export default function DashboardScreen() {
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: SPACING.md }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Feather name="heart" size={12} color={COLORS.textSecondary} style={{ marginRight: 6 }} />
+                    <HeartbeatPulse>
+                      <Feather name="heart" size={14} color={COLORS.red} style={{ marginRight: 6 }} />
+                    </HeartbeatPulse>
                     <Text style={styles.reportTitle}>HEART RATE</Text>
                   </View>
                   <Feather name="chevron-right" size={14} color={COLORS.textMuted} />
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                  <Text style={[styles.reportValue, { color: '#1E3A5F' }]}>{latestVitals.heart_rate != null ? Math.round(latestVitals.heart_rate) : '—'}</Text>
+                  <Text style={[styles.reportValue, { color: COLORS.primary900 }]}>{latestVitals.heart_rate != null ? Math.round(latestVitals.heart_rate) : '—'}</Text>
                   {latestVitals.heart_rate != null && <Text style={styles.reportUnit}>BPM</Text>}
                 </View>
               </PressableCard>

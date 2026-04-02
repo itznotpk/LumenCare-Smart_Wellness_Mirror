@@ -79,23 +79,22 @@ sequenceDiagram
 
 | Feature | Description |
 | :--- | :--- |
-| Real-time Vitals Dashboard | Live synchronization with the mirror's rPPG system. View Heart Rate (BPM), Respiration, and Wellness Scores with smooth, interactive animations. |
-| Historical Trends Analysis | Deep-dive into long-term health using scalable charts (RMSSD, SDNN, HRV) to identify early warning signs of health deterioration. |
+| Smart Sync Monitoring | Real-time **"Last Sync"** tracking with relative date-aware timestamps (e.g., "Yesterday 10:15 PM") for transparent data freshness. |
+| Multi-Range Health Trends | Longitudinal analysis with three localized viewing modes: **Daily (1D)** for granular scans, **Weekly (1W)** with a 7-day range picker, and **Yearly (1Y)** for monthly averages. |
+| Strict Profile Isolation | Enterprise-grade data partitioning ensuring zero "ghosting" or data leakage between multiple monitored elderly profiles. |
 | Safety Alert Infrastructure | Real-time fall detection and critical vital alerts powered by Supabase triggers and native push notifications. |
 | Lumen IQ (AI Chat) | A session-based, context-aware AI assistant that answers caregiver questions based on the latest patient data. |
-| Daily Drops | A secure media-sharing module allowing caregivers to push photos and messages directly onto the Smart Mirror's display. |
-| Premium UI/UX | Designed with a modern "Apple Health" aesthetic, featuring glassmorphism, smooth transitions, and haptic feedback. |
+| Mirror Interaction Loop | Two-way media sharing (Daily Drops) with real-time mirror reactions (smiles/waves) displayed in a premium conversational feed. |
+| Daylight Glass Aesthetic | A premium, wellness-focused UI featuring glassmorphism, smooth depth transitions, and context-aware haptic feedback. |
 
 ---
 
 ## 🛠 Tech Stack & Core Dependencies
 
-| Category | Component / Technology |
-| :--- | :--- |
 | Mobile Framework | React Native with Expo (v54.0.0) |
 | Backend as a Service | Supabase (PostgreSQL, Realtime, Auth, Storage) |
 | State Management | Zustand (Global persistence and profile orchestration) |
-| Data Visualization | React Native Gifted Charts (Customizable vitals rendering) |
+| Data Visualization | React Native Gifted Charts (Optimized horizontal-scrolling trends) |
 | Feedback Systems | Expo Haptics & Reanimated (Native micro-interactions) |
 | UI & Icons | Vanilla CSS with design tokens and Lucide/Feather icons |
 
@@ -172,12 +171,13 @@ npx expo start
 
 ## 🆕 Vision & Next Steps
 
-*   ✅ **National Health Hackathon 2026**: Initial stable release.
-*   ✅ **LLM Context Integration**: AI assistant now "reads" heart rate trends to answer health queries.
-*   ✅ **Dynamic Safety Circle**: Real-time escalation management via Supabase.
-*   ⏳ **Mirror Presence Detection**: Using sensors to track if the patient is currently in front of the mirror.
-*   ⏳ **Pharmacy Integration**: Automatic notification to caregivers when medicine routines are detected as "skipped".
-*   ⏳ **Multi-Home Hubs**: Allowing family members to monitor multiple mirrors across different locations.
+*   ✅ **National Health Hackathon 2026**: Stable production release.
+*   ✅ **Dynamic Viewing Modes**: 1D, 1W, and 1Y viewing with monthly averaging.
+*   ✅ **Real-Time Interaction Feed**: Merged mirror reactions and daily drops.
+*   ✅ **Data Privacy Walls**: Full profile isolation across all health indices.
+*   ⏳ **Mirror Presence Detection**: Tracking active patient interaction time.
+*   ⏳ **Pharmacy Integration**: Pharmacy-linked medicine adherence tracking.
+*   ⏳ **Multi-Home Hubs**: Unified management for multiple mirror locations.
 
 ---
 *LumenCare — Clarity in Care.*

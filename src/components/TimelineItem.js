@@ -24,7 +24,8 @@ const EMERALD_BG = '#ECFDF5';
 const isFallEvent = (item) => {
   if (item.event_type === 'fall') return true;
   const desc = (item.description || '').toLowerCase();
-  if (desc.includes('fall detected')) return true;
+  if (desc.includes('fall')) return true;
+
   if (item.vitals_status === 'danger' || item.severity === 'critical') return true;
   return false;
 };
@@ -33,9 +34,10 @@ const getEventIcon = (eventType, description = '') => {
   const descLower = description.toLowerCase();
 
   // 🚨 Emergency — overrides everything (check description too)
-  if (eventType === 'fall' || descLower.includes('fall detected')) {
+  if (eventType === 'fall' || descLower.includes('fall')) {
     return { name: 'alert-triangle', color: '#DC2626', bgColor: '#FEF2F2' };
   }
+
 
   // 🌅 Morning vitals scan
   if (descLower.includes('morning')) {

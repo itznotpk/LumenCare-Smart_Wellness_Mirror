@@ -5,7 +5,7 @@ import { Video } from 'expo-av';
 import { Feather } from '@expo/vector-icons';
 import GlassCard from './GlassCard';
 import AnimatedPressable from './AnimatedPressable';
-import { COLORS, SPACING, FONT_SIZES, RADII, MIN_TAP_TARGET } from '../theme';
+import { COLORS, SPACING, FONT_SIZES, RADII, MIN_TAP_TARGET, SHADOWS } from '../theme';
 import { supabase } from '../lib/supabase';
 
 const MAX_VIDEO_DURATION_SEC = 60; // hard cap at 60s for storage/bandwidth
@@ -172,38 +172,23 @@ export default function DailyDropUploader({ profileId, onUpload }) {
   };
 
   return (
-    <GlassCard style={styles.card}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Daily Drop</Text>
-          <Text style={styles.subtitle}>Send a photo, video, or message to the mirror</Text>
-        </View>
+        <Text style={styles.title}>Daily Drop</Text>
+        <Text style={styles.subtitle}>Send a moment to the mirror</Text>
       </View>
 
-      {/* Media Preview — Image or Video */}
+      {/* Media Preview Area */}
       {selectedMedia && (
         <View style={styles.previewContainer}>
           {isVideo ? (
-            <View>
-              <Video
-                ref={videoRef}
-                source={{ uri: selectedMedia.uri }}
-                style={styles.preview}
-                resizeMode="cover"
-                shouldPlay={false}
-                isLooping={false}
-                useNativeControls
-              />
-              {/* Video badge */}
-              <View style={styles.videoBadge}>
-                <Feather name="film" size={12} color={COLORS.white} />
-                <Text style={styles.videoBadgeText}>
-                  {selectedMedia.duration
-                    ? `${Math.round(selectedMedia.duration / 1000)}s`
-                    : 'Video'}
-                </Text>
-              </View>
-            </View>
+            <Video
+              ref={videoRef}
+              source={{ uri: selectedMedia.uri }}
+              style={styles.preview}
+              resizeMode="cover"
+              useNativeControls
+            />
           ) : (
             <Image source={{ uri: selectedMedia.uri }} style={styles.preview} />
           )}
@@ -213,177 +198,142 @@ export default function DailyDropUploader({ profileId, onUpload }) {
         </View>
       )}
 
-      {/* Modern Composer */}
-      <View style={styles.composerContainer}>
-        <TextInput
-          style={styles.composerInput}
-          placeholder="Type a message for your loved one..."
-          placeholderTextColor={COLORS.textMuted}
-          value={message}
-          onChangeText={setMessage}
-          multiline
-          maxLength={200}
-        />
-      </View>
+      {/* Modern Floating Composer */}
+      <View style={styles.composerWrapper}>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type a message..."
+            placeholderTextColor={COLORS.textMuted}
+            value={message}
+            onChangeText={setMessage}
+            multiline
+            maxLength={200}
+          />
+          
+          <View style={styles.actionsRow}>
+            <View style={styles.mediaIcons}>
+              <TouchableOpacity onPress={() => pickMedia(true)} style={styles.iconButton}>
+                <Feather name="camera" size={20} color={COLORS.primary500} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => pickMedia(false)} style={styles.iconButton}>
+                <Feather name="image" size={20} color={COLORS.primary500} />
+              </TouchableOpacity>
+            </View>
 
-      {/* Action Bar */}
-      <View style={styles.actionBar}>
-        <View style={styles.mediaButtons}>
-          <AnimatedPressable style={styles.mediaButton} onPress={() => pickMedia(true)}>
-            <Feather name="camera" size={20} color={COLORS.primary500} />
-            <Text style={styles.mediaButtonLabel}>Camera</Text>
-          </AnimatedPressable>
-          <AnimatedPressable style={styles.mediaButton} onPress={() => pickMedia(false)}>
-            <Feather name="image" size={20} color={COLORS.primary500} />
-            <Text style={styles.mediaButtonLabel}>Gallery</Text>
-          </AnimatedPressable>
+            <TouchableOpacity
+              style={[styles.sendCircle, uploading && styles.sendDisabled]}
+              onPress={handleSend}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Feather name="send" size={18} color={COLORS.white} />
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
-
-        <AnimatedPressable
-          style={[styles.sendButton, uploading && styles.sendButtonDisabled]}
-          onPress={handleSend}
-          disabled={uploading}
-        >
-          <Feather name="send" size={18} color={COLORS.white} />
-          <Text style={styles.sendText}>{uploading ? 'Sending...' : 'Send'}</Text>
-        </AnimatedPressable>
       </View>
-
-      {/* Hint */}
-      <Text style={styles.hint}>
-        💡 Short videos (20-50s) work best — they attract your loved one to the mirror for a daily vitals scan!
-      </Text>
-    </GlassCard>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    padding: SPACING.xl,
+  container: {
+    marginBottom: SPACING.lg,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.sm,
   },
   title: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
+    fontWeight: '800',
+    color: '#0F172A', // Slate 900
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: FONT_SIZES.xs,
     color: COLORS.textMuted,
+    fontWeight: '500',
   },
-
-  // Preview
   previewContainer: {
-    position: 'relative',
     marginBottom: SPACING.md,
-    borderRadius: RADII.md,
+    borderRadius: RADII.xl,
     overflow: 'hidden',
+    position: 'relative',
+    backgroundColor: '#000',
+    ...SHADOWS.card,
   },
   preview: {
     width: '100%',
-    height: 180,
-    borderRadius: RADII.md,
-    backgroundColor: '#000',
+    height: 200,
   },
   removeButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    top: 12,
+    right: 12,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 6,
+    borderRadius: 20,
   },
-  videoBadge: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: RADII.sm,
-  },
-  videoBadgeText: {
-    color: COLORS.white,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-
-  // Composer
-  composerContainer: {
-    backgroundColor: COLORS.background,
-    borderRadius: RADII.md,
+  composerWrapper: {
+    backgroundColor: COLORS.white,
+    borderRadius: 24,
+    padding: 6,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+      },
+      android: { elevation: 4 },
+    }),
     borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: SPACING.md,
+    borderColor: '#F1F5F9', // Slate 100
   },
-  composerInput: {
-    padding: SPACING.md,
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textPrimary,
-    minHeight: 56,
+  inputContainer: {
+    padding: 6,
+  },
+  input: {
+    fontSize: 15,
+    color: '#1E293B',
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingBottom: 12,
+    minHeight: 48,
+    maxHeight: 120,
     textAlignVertical: 'top',
   },
-
-  // Action bar
-  actionBar: {
+  actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingTop: 4,
+    paddingBottom: 2,
+    paddingHorizontal: 4,
   },
-  mediaButtons: {
+  mediaIcons: {
     flexDirection: 'row',
-    gap: SPACING.sm,
+    gap: 12,
   },
-  mediaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: RADII.md,
-    backgroundColor: COLORS.primary50,
-    minHeight: MIN_TAP_TARGET,
+  iconButton: {
+    padding: 8,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
   },
-  mediaButtonLabel: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: '600',
-    color: COLORS.primary500,
-  },
-  sendButton: {
-    flexDirection: 'row',
+  sendCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: COLORS.primary500,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: SPACING.xs,
-    backgroundColor: COLORS.primary500,
-    borderRadius: RADII.md,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.xl,
-    minHeight: MIN_TAP_TARGET,
+    ...SHADOWS.md,
   },
-  sendButtonDisabled: {
-    opacity: 0.6,
-  },
-  sendText: {
-    color: COLORS.white,
-    fontSize: FONT_SIZES.md,
-    fontWeight: '700',
-  },
-  hint: {
-    marginTop: SPACING.md,
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textMuted,
-    textAlign: 'center',
-    fontStyle: 'italic',
+  sendDisabled: {
+    opacity: 0.5,
   },
 });

@@ -109,4 +109,25 @@ export const useProfileStore = create((set, get) => ({
     await get().fetchElderlies();
     return { success: true };
   },
+
+  // Update caregiver profile
+  updateCaregiverProfile: async (updates) => {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { success: false, error: 'User not authenticated' };
+
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', user.id);
+
+    if (error) {
+      console.error('Update caregiver profile error:', error.message);
+      return { success: false, error: error.message };
+    }
+
+    // Refresh store state
+    await get().fetchCaregiverProfile();
+    return { success: true };
+  },
 }));
+

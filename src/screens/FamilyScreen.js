@@ -3,7 +3,7 @@ import { ScrollView, View, Text, StyleSheet, RefreshControl, ActivityIndicator }
 import * as Haptics from 'expo-haptics';
 import { Feather } from '@expo/vector-icons';
 import DailyDropUploader from '../components/DailyDropUploader';
-import EmotionalFeedback from '../components/EmotionalFeedback';
+import MirrorInteractionLoop from '../components/MirrorInteractionLoop';
 import GlassCard from '../components/GlassCard';
 import { useProfileStore } from '../store/useProfileStore';
 import { useToastStore } from '../store/useToastStore';
@@ -71,9 +71,9 @@ export default function FamilyScreen() {
         <DailyDropUploader profileId={profile?.id} onUpload={handleUpload} />
       </View>
 
-      {/* Emotional Feedback Loop */}
+      {/* Mirror Interaction Loop (Drops + Replies) */}
       <View style={styles.section}>
-        <EmotionalFeedback profileId={profile?.id} />
+        <MirrorInteractionLoop profileId={profile?.id} />
       </View>
     </ScrollView>
   );

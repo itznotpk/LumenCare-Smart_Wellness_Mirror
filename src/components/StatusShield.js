@@ -42,7 +42,9 @@ const STATUS_CONFIG = {
  */
 export default function StatusShield({
   status = 'green',
-  message,
+  lastUpdateTime,
+  activityStatus,
+  relativeTime,
   onNudge,
   profile,
   hideActions = false,
@@ -122,26 +124,26 @@ export default function StatusShield({
         {/* Profile Details Stack */}
         <View style={styles.detailsContainer}>
           <View style={styles.nameRow}>
-            <Text style={styles.profileName}>{displayName}</Text>
-            {calculatedAge && <Text style={styles.profileAge}>{calculatedAge} yrs</Text>}
+            <View style={{ flexShrink: 1 }}>
+              <Text style={styles.profileName} numberOfLines={1}>{displayName}</Text>
+            </View>
+            <View style={styles.statusBadgePill}>
+              <Text style={styles.statusBadgeText}>Healthy</Text>
+            </View>
           </View>
           
-          <Text style={styles.sectionHeader}>BASELINE</Text>
-          <Text style={styles.conditionsText} numberOfLines={2}>
-            {medicalInfo}
-          </Text>
+          <Text style={styles.profileAge}>{calculatedAge} yrs · {profile?.gender || 'Unknown'}</Text>
+
+          <View style={styles.monitoringInfo}>
+            {lastUpdateTime && (
+              <View style={styles.infoRow}>
+                <Feather name="clock" size={10} color={COLORS.textMuted} />
+                <Text style={styles.infoText}>Last Scan: {lastUpdateTime}</Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
-
-      {/* ── Middle Section: Status Message ─────────────── */}
-      {message ? (
-        <View style={[styles.messageBox, { backgroundColor: config.bgColor }]}>
-          <Feather name={config.icon} size={20} color={config.color} style={{ marginTop: 2 }} />
-          <Text style={[styles.messageText, { color: config.textColor }]} accessibilityRole="text">
-            {message}
-          </Text>
-        </View>
-      ) : null}
 
       {/* ── Bottom Section: Action Buttons ─────────────── */}
       {(status === 'yellow' || status === 'red') && !hideActions && (
@@ -171,21 +173,21 @@ export default function StatusShield({
   );
 }
 
-const AVATAR_SIZE = 96;
+const AVATAR_SIZE = 72;
 
 const styles = StyleSheet.create({
   card: {
-    padding: SPACING.xl,
+    padding: SPACING.lg,
     marginTop: SPACING.md,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.sm,
   },
   
   // Profile area
   profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xl,
-    marginBottom: SPACING.lg,
+    gap: SPACING.lg,
+    marginBottom: 0,
   },
   
   // Avatar & Rings
@@ -198,16 +200,16 @@ const styles = StyleSheet.create({
   },
   avatarGlowRing: {
     position: 'absolute',
-    width: AVATAR_SIZE + 24,
-    height: AVATAR_SIZE + 24,
-    borderRadius: (AVATAR_SIZE + 24) / 2,
-    borderWidth: 3,
+    width: AVATAR_SIZE + 16,
+    height: AVATAR_SIZE + 16,
+    borderRadius: (AVATAR_SIZE + 16) / 2,
+    borderWidth: 2,
   },
   avatarBorderRing: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
     borderRadius: AVATAR_SIZE / 2,
-    borderWidth: 4,
+    borderWidth: 3,
     backgroundColor: COLORS.card,
     alignItems: 'center',
     justifyContent: 'center',
@@ -226,7 +228,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarFallbackText: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: '700',
     color: COLORS.primary500,
   },
@@ -248,23 +250,51 @@ const styles = StyleSheet.create({
   detailsContainer: {
     flex: 1,
     justifyContent: 'center',
+    paddingLeft: SPACING.md, // Tighten avatar-name gap
   },
   nameRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: SPACING.sm,
-    marginBottom: SPACING.md,
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 0,
   },
   profileName: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#000000', // stark dark text for iOS feel
+    color: '#000000',
     letterSpacing: -0.5,
   },
+  statusBadgePill: {
+    backgroundColor: '#D1FAE5', // light emerald
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: RADII.full,
+  },
+  statusBadgeText: {
+    color: '#065F46', // emerald 700
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
   profileAge: {
-    fontSize: FONT_SIZES.md,
+    fontSize: 13,
     fontWeight: '600',
     color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  monitoringInfo: {
+    marginTop: 4,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  infoText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textMuted,
   },
   sectionHeader: {
     fontSize: 10,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useProfileStore } from '../store/useProfileStore';
@@ -212,7 +212,11 @@ export default function LumenChat() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+    >
       <View style={styles.headerRow}>
         <Text style={styles.chatTitle}>Ask Lumen IQ</Text>
         {messages.length > 0 && (
@@ -223,17 +227,18 @@ export default function LumenChat() {
         )}
       </View>
       
-      <View style={styles.chatBox}>
+      <View style={[styles.chatBox, messages.length === 0 && { height: 180 }]}>
         <ScrollView
           ref={scrollViewRef}
           style={styles.messageList}
           contentContainerStyle={styles.messageListContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {messages.length === 0 ? (
             <View style={styles.emptyState}>
               <Feather name="message-circle" size={32} color={COLORS.divider} style={{ marginBottom: 10 }} />
-              <Text style={styles.emptyText}>Start a new session by asking a question about {profile?.first_name}.</Text>
+              <Text style={styles.emptyText}>Get to know more about your loved one</Text>
             </View>
           ) : (
             messages.map((m, i) => (
@@ -301,7 +306,7 @@ export default function LumenChat() {
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -335,7 +340,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
   chatBox: {
-    height: 350,
+    height: 400,
     backgroundColor: COLORS.card,
     borderRadius: RADII.xl,
     borderWidth: 1,
@@ -356,7 +361,6 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     flex: 1,
-    height: 300,
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.xl,

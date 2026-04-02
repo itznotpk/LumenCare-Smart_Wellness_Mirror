@@ -396,8 +396,10 @@ export default function DashboardScreen() {
   };
 
   return (
-    <View
+    <KeyboardAvoidingView
       style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={80}
     >
       <ScrollView
         ref={scrollRef}
@@ -464,29 +466,25 @@ export default function DashboardScreen() {
         <View onLayout={(e) => { shieldY.current = e.nativeEvent.layout.y; }}>
           <StatusShield
             status={activeAlert ? 'red' : overallStatus}
-            message={activeAlert ? null : statusMessage}
+            lastUpdateTime={latestVitals?.recorded_at ? new Date(latestVitals.recorded_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null}
             onNudge={handleNudge}
             profile={profile}
             hideActions={!!activeAlert}
           />
         </View>
 
-        {/* ── Last Seen Activity Indicator ── */}
+        {/* ── Last Seen Activity Sub-label (External for better hierarchy) ── */}
         {latestVitals?.recorded_at && (
-          <View style={styles.lastSeenRow}>
-            <View style={[styles.lastSeenDot, { backgroundColor: activityStatus.color }]} />
-            <Feather name={activityStatus.icon} size={12} color={activityStatus.color} style={{ marginRight: 4 }} />
-            <Text style={[styles.lastSeenText, { color: activityStatus.color }]}>
-              {activityStatus.label}
-            </Text>
-            <Text style={styles.lastSeenTime}>
-              · Mirror detected face {relativeTime}
+          <View style={[styles.lastSeenRow, { marginTop: 0, marginBottom: 4 }]}>
+            <Feather name={activityStatus.icon} size={11} color={activityStatus.color} style={{ marginRight: 6 }} />
+            <Text style={[styles.lastSeenText, { color: activityStatus.color, fontSize: 11 }]}>
+              Mirror {activityStatus.label} · {relativeTime}
             </Text>
           </View>
         )}
 
-        {/* Spacer */}
-        <View style={{ marginTop: SPACING.sm }} />
+        {/* Spacer to Vitals */}
+        <View style={{ marginTop: 0 }} />
 
         {!latestVitals ? (
           <View style={styles.emptyStateContainer}>
@@ -671,7 +669,7 @@ export default function DashboardScreen() {
           ))}
         </View>
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

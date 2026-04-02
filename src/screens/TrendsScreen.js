@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { ScrollView, View, Text, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, RefreshControl, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -32,6 +32,9 @@ const TIME_RANGES = [
  * TrendsScreen — Longitudinal health insights with charts.
  * Merged wellness + vital charts under a unified time range toggle.
  */
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CHART_WIDTH = SCREEN_WIDTH - 80;
+
 export default function TrendsScreen() {
   const route = useRoute();
   const [selectedMetric, setSelectedMetric] = useState('hr');
@@ -130,7 +133,8 @@ export default function TrendsScreen() {
     const d = new Date(dateStr);
     if (!d || isNaN(d.getTime())) return '';
     if (timeRange === '1D') {
-      return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(' ', '').toLowerCase();
+      const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+      return timeStr.replace(':00', '').toLowerCase();
     } else if (timeRange === '1W') {
       return d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3);
     } else {
@@ -283,53 +287,46 @@ export default function TrendsScreen() {
             ) : (
               <LineChart
                 data={wellnessData}
-                data2={baselineData}
-                height={150}
-                width={280}
-                spacing={42}
-                initialSpacing={10}
+                height={160}
+                width={CHART_WIDTH}
+                spacing={Math.max(60, CHART_WIDTH / (wellnessData.length || 1))}
+                initialSpacing={20}
                 color={COLORS.primary500}
-                color2={COLORS.textMuted}
                 thickness={3}
-                thickness2={1}
                 dataPointsColor={COLORS.primary500}
-                dataPointsRadius={5}
-                dashWidth={4}
-                dashGap={4}
-                strokeDashArray2={[6, 4]}
+                dataPointsRadius={4}
                 textColor={COLORS.textSecondary}
                 textFontSize={10}
-                yAxisColor={COLORS.border}
-                xAxisColor={COLORS.border}
+                yAxisThickness={0}
+                xAxisThickness={1}
+                xAxisColor={COLORS.divider}
                 yAxisTextStyle={{ color: COLORS.textMuted, fontSize: 10 }}
-                xAxisLabelTextStyle={{ color: COLORS.textMuted, fontSize: 10 }}
+                xAxisLabelTextStyle={{ color: COLORS.textMuted, fontSize: 10, textAlign: 'center' }}
                 hideRules
                 curved
+                isAnimated
+                animationDuration={1200}
                 areaChart
-                startFillColor={COLORS.primary500 + '20'}
-                endFillColor={COLORS.primary500 + '05'}
+                startFillColor={COLORS.primary500}
+                startOpacity={0.2}
+                endFillColor={COLORS.primary500}
+                endOpacity={0.01}
                 noOfSections={4}
                 maxValue={100}
-                focusEnabled
-                showStripOnFocus
-                showTextOnFocus
-                stripColor={COLORS.primary500 + '15'}
-                stripWidth={2}
-                unFocusOnPressOut
-                focusedDataPointColor={COLORS.primary500}
-                focusedDataPointRadius={7}
+                pointerConfig={{
+                  pointerStripHeight: 140,
+                  pointerStripColor: COLORS.primary500 + '30',
+                  pointerStripWidth: 2,
+                  pointerColor: COLORS.primary500,
+                  radius: 6,
+                  pointerLabelComponent: items => renderWellnessTooltip(items[0]),
+                  activatePointersOnLongPress: false,
+                  autoAdjustPointerLabelPosition: true,
+                }}
+                hideXAxisText
+                hideYAxisText
               />
             )}
-            <View style={styles.legendRow}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendLine, { backgroundColor: COLORS.primary500 }]} />
-                <Text style={styles.legendText}>Daily Score</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendLine, { backgroundColor: COLORS.textMuted, borderStyle: 'dashed' }]} />
-                <Text style={styles.legendText}>30-Day Baseline</Text>
-              </View>
-            </View>
           </GlassCard>
 
           {/* Metric Toggle + Chart */}
@@ -340,40 +337,46 @@ export default function TrendsScreen() {
 
           <GlassCard style={[styles.chartCard, { marginTop: SPACING.md }]}>
             <Text style={styles.chartLabel}>{config.label} ({config.unit})</Text>
-            <Text style={styles.chartHint}>Tap any point to inspect</Text>
             {refreshing ? (
               <GlassSkeleton height={150} />
             ) : (
               <LineChart
                 data={chartData}
-                height={150}
-                width={280}
-                spacing={42}
-                initialSpacing={10}
+                height={160}
+                width={CHART_WIDTH}
+                spacing={Math.max(60, CHART_WIDTH / (chartData.length || 1))}
+                initialSpacing={20}
                 color={config.color}
                 thickness={3}
                 dataPointsColor={config.color}
-                dataPointsRadius={5}
+                dataPointsRadius={4}
                 textColor={COLORS.textSecondary}
                 textFontSize={10}
-                yAxisColor={COLORS.border}
-                xAxisColor={COLORS.border}
+                yAxisThickness={0}
+                xAxisThickness={1}
+                xAxisColor={COLORS.divider}
                 yAxisTextStyle={{ color: COLORS.textMuted, fontSize: 10 }}
-                xAxisLabelTextStyle={{ color: COLORS.textMuted, fontSize: 10 }}
+                xAxisLabelTextStyle={{ color: COLORS.textMuted, fontSize: 10, textAlign: 'center' }}
                 hideRules
                 curved
+                isAnimated
+                animationDuration={1200}
                 areaChart
-                startFillColor={config.color + '20'}
-                endFillColor={config.color + '05'}
+                startFillColor={config.color}
+                startOpacity={0.2}
+                endFillColor={config.color}
+                endOpacity={0.01}
                 noOfSections={4}
-                focusEnabled
-                showStripOnFocus
-                showTextOnFocus
-                stripColor={config.color + '15'}
-                stripWidth={2}
-                unFocusOnPressOut
-                focusedDataPointColor={config.color}
-                focusedDataPointRadius={7}
+                pointerConfig={{
+                  pointerStripHeight: 140,
+                  pointerStripColor: config.color + '30',
+                  pointerStripWidth: 2,
+                  pointerColor: config.color,
+                  radius: 6,
+                  pointerLabelComponent: items => renderTooltip(items[0]),
+                  activatePointersOnLongPress: false,
+                  autoAdjustPointerLabelPosition: true,
+                }}
               />
             )}
           </GlassCard>

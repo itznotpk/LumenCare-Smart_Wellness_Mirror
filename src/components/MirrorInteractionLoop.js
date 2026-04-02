@@ -13,6 +13,8 @@ export default function MirrorInteractionLoop({ profileId }) {
 
   const fetchInteractions = async () => {
     if (!profileId) return;
+    setInteractions([]);
+    setLoading(true);
 
     // 1. Fetch Drops
     const { data: drops } = await supabase

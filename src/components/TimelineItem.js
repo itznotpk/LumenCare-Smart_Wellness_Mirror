@@ -14,18 +14,25 @@ import { COLORS, SPACING, FONT_SIZES, RADII } from '../theme';
  * 📷 Media                → image,           Purple
  * 🕐 Default              → clock,           Muted
  */
-const EMERALD = '#10B981';
-const EMERALD_BG = '#ECFDF5';
+/**
+ * Event-specific icon mapping:
+ *
+ * 🚨 Emergency (Fall)     → alert-triangle,  Rose Red
+ * 🌅 Morning  (6–10 AM)   → sunrise,         Organic Sage
+ * ☀️ Mid-Day  (11 AM–4 PM) → sun,             Organic Sage
+ * 🌇 Evening  (5–8 PM)    → sunset,          Organic Sage
+ * 🌙 Nighttime (9 PM–1 AM) → moon,            Organic Sage
+ * 📷 Media                → image,           Empathy Lavender
+ * 🕐 Default              → clock,           Muted Slate
+ */
 
 /**
  * Detect if this event is a fall/emergency — checks both event_type AND description
- * to handle legacy data that might not have event_type='fall'.
  */
 const isFallEvent = (item) => {
   if (item.event_type === 'fall') return true;
   const desc = (item.description || '').toLowerCase();
   if (desc.includes('fall')) return true;
-
   if (item.vitals_status === 'danger' || item.severity === 'critical') return true;
   return false;
 };
@@ -35,38 +42,37 @@ const getEventIcon = (eventType, description = '') => {
 
   // 🚨 Emergency — overrides everything (check description too)
   if (eventType === 'fall' || descLower.includes('fall')) {
-    return { name: 'alert-triangle', color: '#DC2626', bgColor: '#FEF2F2' };
+    return { name: 'alert-triangle', color: COLORS.red, bgColor: COLORS.redLight };
   }
-
 
   // 🌅 Morning vitals scan
   if (descLower.includes('morning')) {
-    return { name: 'sunrise', color: EMERALD, bgColor: EMERALD_BG };
+    return { name: 'sunrise', color: COLORS.sage, bgColor: COLORS.sageMuted };
   }
 
   // ☀️ Mid-day check-in
   if (descLower.includes('mid-day')) {
-    return { name: 'sun', color: EMERALD, bgColor: EMERALD_BG };
+    return { name: 'sun', color: COLORS.sage, bgColor: COLORS.sageMuted };
   }
 
   // 🌇 Evening vitals scan
   if (descLower.includes('evening')) {
-    return { name: 'sunset', color: EMERALD, bgColor: EMERALD_BG };
+    return { name: 'sunset', color: COLORS.sage, bgColor: COLORS.sageMuted };
   }
 
   // 🌙 Nighttime scan
   if (descLower.includes('night')) {
-    return { name: 'moon', color: EMERALD, bgColor: EMERALD_BG };
+    return { name: 'moon', color: COLORS.sage, bgColor: COLORS.sageMuted };
   }
 
   // 📷 Media (daily drops)
   if (eventType === 'media') {
-    return { name: 'image', color: '#9333EA', bgColor: '#F5F3FF' };
+    return { name: 'image', color: COLORS.accent500, bgColor: COLORS.accent50 };
   }
 
   // General scan fallback
   if (eventType === 'scan') {
-    return { name: 'activity', color: EMERALD, bgColor: EMERALD_BG };
+    return { name: 'activity', color: COLORS.sage, bgColor: COLORS.sageMuted };
   }
 
   // General motion fallback

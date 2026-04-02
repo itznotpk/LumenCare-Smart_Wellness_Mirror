@@ -24,8 +24,7 @@ const METRIC_CONFIG = {
 const TIME_RANGES = [
   { key: '1D', label: '1D' },
   { key: '1W', label: '1W' },
-  { key: '1M', label: '1M' },
-  { key: '3M', label: '3M' },
+  { key: '1Y', label: '1Y' },
 ];
 
 /**
@@ -57,6 +56,11 @@ export default function TrendsScreen() {
   );
   const [refreshing, setRefreshing] = useState(false);
   const [selectedDate1D, setSelectedDate1D] = useState(() => {
+    const d = new Date();
+    d.setHours(0,0,0,0);
+    return d;
+  });
+  const [selectedDate1W, setSelectedDate1W] = useState(() => {
     const d = new Date();
     d.setHours(0,0,0,0);
     return d;
@@ -106,28 +110,99 @@ export default function TrendsScreen() {
   // Check if we have enough data
   const hasEnoughData = history.length >= 3;
 
-  // Filter history based on time range
-  const getFilteredHistory = () => {
+  // Aggregation Logic: Group multiple scans by day and fill missing days with 0
+  const getAggregatedHistory = () => {
     if (timeRange === '1D') {
       const targetStart = new Date(selectedDate1D);
-      targetStart.setHours(0,0,0,0);
+      targetStart.setHours(0, 0, 0, 0);
       const targetEnd = new Date(selectedDate1D);
-      targetEnd.setHours(23,59,59,999);
-      return history.filter(day => {
-        const d = new Date(day.date);
+      targetEnd.setHours(23, 59, 59, 999);
+      return history.filter(item => {
+        const d = new Date(item.date);
         return d >= targetStart && d <= targetEnd;
       });
     }
 
-    const now = new Date();
-    const daysMap = { '1W': 7, '1M': 30, '3M': 90 };
-    const days = daysMap[timeRange] || 7;
-    const cutoff = new Date(now);
-    cutoff.setDate(cutoff.getDate() - days);
-    return history.filter((day) => new Date(day.date) >= cutoff).slice(-150); // Chart engine bound
+    if (timeRange === '1W') {
+      const aggregated = [];
+      const endDate = new Date(selectedDate1W);
+      endDate.setHours(0, 0, 0, 0);
+      
+      for (let i = 6; i >= 0; i--) {
+        const targetDate = new Date(endDate);
+        targetDate.setDate(targetDate.getDate() - i);
+        const dateStr = targetDate.toDateString();
+
+        // Find all scans on this specific day
+        const dayScans = history.filter(h => new Date(h.date).toDateString() === dateStr);
+
+        if (dayScans.length > 0) {
+          const avg = (key) => dayScans.reduce((sum, s) => sum + (s[key] || 0), 0) / dayScans.length;
+          aggregated.push({
+            date: targetDate.toISOString(),
+            heart_rate: avg('heart_rate'),
+            hrv_sdnn: avg('hrv_sdnn'),
+            hrv_rmssd: avg('hrv_rmssd'),
+            respiratory_rate: avg('respiratory_rate'),
+            wellness_score: avg('wellness_score'),
+          });
+        } else {
+          aggregated.push({
+            date: targetDate.toISOString(),
+            heart_rate: 0,
+            hrv_sdnn: 0,
+            hrv_rmssd: 0,
+            respiratory_rate: 0,
+            wellness_score: 0,
+            isEmpty: true
+          });
+        }
+      }
+      return aggregated;
+    }
+
+    if (timeRange === '1Y') {
+      const aggregatedM = [];
+      const now = new Date();
+      // Last 12 months averaging
+      for (let i = 11; i >= 0; i--) {
+        const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthYearStr = `${targetDate.getMonth()}-${targetDate.getFullYear()}`;
+
+        const monthScans = history.filter(h => {
+          const d = new Date(h.date);
+          return d.getMonth() === targetDate.getMonth() && d.getFullYear() === targetDate.getFullYear();
+        });
+
+        if (monthScans.length > 0) {
+          const avg = (key) => monthScans.reduce((sum, s) => sum + (s[key] || 0), 0) / monthScans.length;
+          aggregatedM.push({
+            date: targetDate.toISOString(),
+            heart_rate: avg('heart_rate'),
+            hrv_sdnn: avg('hrv_sdnn'),
+            hrv_rmssd: avg('hrv_rmssd'),
+            respiratory_rate: avg('respiratory_rate'),
+            wellness_score: avg('wellness_score'),
+          });
+        } else {
+          aggregatedM.push({
+            date: targetDate.toISOString(),
+            heart_rate: 0,
+            hrv_sdnn: 0,
+            hrv_rmssd: 0,
+            respiratory_rate: 0,
+            wellness_score: 0,
+            isEmpty: true
+          });
+        }
+      }
+      return aggregatedM;
+    }
+
+    return [];
   };
 
-  const filteredHistory = getFilteredHistory();
+  const filteredHistory = getAggregatedHistory();
 
   const formatLabel = (dateStr) => {
     const d = new Date(dateStr);
@@ -137,27 +212,29 @@ export default function TrendsScreen() {
       return timeStr.replace(':00', '').toLowerCase();
     } else if (timeRange === '1W') {
       return d.toLocaleDateString('en-US', { weekday: 'short' }).slice(0, 3);
-    } else {
-      return `${d.getMonth() + 1}/${d.getDate()}`;
+    } else if (timeRange === '1Y') {
+      return d.toLocaleDateString('en-US', { month: 'short' });
     }
+    return '';
   };
 
   // Chart data
   const chartData = filteredHistory.map((day) => ({
-    value: day[config.key] || 0,
+    value: Math.round(day[config.key] || 0),
     label: formatLabel(day.date),
-    dataPointText: `${day[config.key] || 0}`,
+    dataPointText: `${Math.round(day[config.key] || 0)}`,
   }));
 
   // Wellness trend data
   const wellnessData = filteredHistory.map((day) => ({
-    value: day.wellness_score || 0,
+    value: Math.round(day.wellness_score || 0),
     label: formatLabel(day.date),
+    dataPointText: `${Math.round(day.wellness_score || 0)}`,
   }));
 
   // Baseline ghost line
   const baselineData = filteredHistory.map(() => ({
-    value: baselineAverage,
+    value: Math.round(baselineAverage),
   }));
 
   const latestLfHf = history.length > 0 ? history[history.length - 1].lf_hf_ratio : 1.0;
@@ -189,6 +266,12 @@ export default function TrendsScreen() {
     </View>
   );
 
+  // Calculate max values for charts with extra headroom (20% up) to prevent cutoff
+  const maxWellnessVal = Math.max(...wellnessData.map(d => d.value), 100);
+  const maxVitalVal = Math.max(...chartData.map(d => d.value), 10);
+  const wellnessMaxValue = maxWellnessVal > 100 ? Math.ceil(maxWellnessVal * 1.2) : 110;
+  const vitalsMaxValue = Math.ceil(maxVitalVal * 1.2 / 10) * 10;
+
   return (
     <ScrollView
       ref={scrollRef}
@@ -199,8 +282,7 @@ export default function TrendsScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary500} />
       }
     >
-
-
+      {/* ... (rest of time selection logic remains same) */}
       {/* Time Range Toggle — unified for all charts */}
       <View style={styles.timeRangeContainer}>
         {TIME_RANGES.map((range) => {
@@ -227,28 +309,73 @@ export default function TrendsScreen() {
 
       {/* Date Navigator for 1D mode */}
       {timeRange === '1D' && (
-        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: SPACING.md, marginBottom: SPACING.lg }}>
+        <View style={styles.navigatorContainer}>
           <TouchableOpacity 
             onPress={() => setSelectedDate1D(d => new Date(d.getTime() - 86400000))}
-            style={{ padding: SPACING.sm, backgroundColor: COLORS.card, borderRadius: RADII.full, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2 }}
+            style={styles.navigatorArrow}
           >
             <Feather name="chevron-left" size={24} color={COLORS.textSecondary} />
           </TouchableOpacity>
-          <Text style={{ fontSize: FONT_SIZES.md, fontWeight: '700', color: COLORS.textPrimary, minWidth: 120, textAlign: 'center' }}>
+          <Text style={styles.navigatorLabel}>
             {selectedDate1D.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </Text>
           <TouchableOpacity 
             onPress={() => setSelectedDate1D(d => new Date(d.getTime() + 86400000))}
             disabled={selectedDate1D.toDateString() === new Date().toDateString()}
-            style={{ padding: SPACING.sm, backgroundColor: selectedDate1D.toDateString() === new Date().toDateString() ? 'transparent' : COLORS.card, borderRadius: RADII.full, shadowColor: COLORS.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: selectedDate1D.toDateString() === new Date().toDateString() ? 0 : 2 }}
+            style={[styles.navigatorArrow, selectedDate1D.toDateString() === new Date().toDateString() && { opacity: 0 }]}
           >
-            <Feather name="chevron-right" size={24} color={selectedDate1D.toDateString() === new Date().toDateString() ? COLORS.border : COLORS.textSecondary} />
+            <Feather name="chevron-right" size={24} color={COLORS.textSecondary} />
           </TouchableOpacity>
         </View>
       )}
 
+      {/* Week Navigator for 1W mode */}
+      {timeRange === '1W' && (
+        <View style={styles.navigatorContainer}>
+          <TouchableOpacity 
+            onPress={() => setSelectedDate1W(d => {
+              const nd = new Date(d);
+              nd.setDate(nd.getDate() - 7);
+              return nd;
+            })}
+            style={styles.navigatorArrow}
+          >
+            <Feather name="chevron-left" size={24} color={COLORS.textSecondary} />
+          </TouchableOpacity>
+          <View style={{ alignItems: 'center', minWidth: 160 }}>
+            <Text style={styles.navigatorLabel}>
+              {(() => {
+                const start = new Date(selectedDate1W);
+                start.setDate(start.getDate() - 6);
+                const end = new Date(selectedDate1W);
+                return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+              })()}
+            </Text>
+            <Text style={{ fontSize: 10, color: COLORS.textMuted, fontWeight: '600' }}>7-DAY WINDOW</Text>
+          </View>
+          <TouchableOpacity 
+            onPress={() => setSelectedDate1W(d => {
+              const nd = new Date(d);
+              nd.setDate(nd.getDate() + 7);
+              return nd;
+            })}
+            disabled={new Date(selectedDate1W).toDateString() === new Date().toDateString()}
+            style={[styles.navigatorArrow, new Date(selectedDate1W).toDateString() === new Date().toDateString() && { opacity: 0 }]}
+          >
+            <Feather name="chevron-right" size={24} color={COLORS.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Yearly Hint */}
+      {timeRange === '1Y' && (
+        <View style={{ alignItems: 'center', marginBottom: SPACING.lg }}>
+          <Text style={[styles.navigatorLabel, { minWidth: 0 }]}>Last 12 Months</Text>
+          <Text style={{ fontSize: 10, color: COLORS.textMuted, fontWeight: '600' }}>MONTHLY AVERAGES</Text>
+        </View>
+      )}
+
       {!hasEnoughData ? (
-        /* Smart Empty State */
         <GlassCard style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>📊</Text>
           <Text style={styles.emptyTitle}>Gathering Baseline Data</Text>
@@ -256,8 +383,6 @@ export default function TrendsScreen() {
             {3 - history.length} more day{3 - history.length !== 1 ? 's' : ''} of scans
             needed to build {displayName}'s Wellness Trend.
           </Text>
-
-          {/* Gamified progress */}
           <View style={styles.progressDots}>
             {[1, 2, 3].map((day) => (
               <View
@@ -279,57 +404,55 @@ export default function TrendsScreen() {
         </GlassCard>
       ) : (
         <>
-          {/* 7-Day Wellness Graph */}
           <GlassCard style={styles.chartCard}>
             <Text style={styles.sectionTitle}>Wellness Index</Text>
             {refreshing ? (
               <GlassSkeleton height={150} />
             ) : (
-              <LineChart
-                data={wellnessData}
-                height={160}
-                width={CHART_WIDTH}
-                spacing={Math.max(60, CHART_WIDTH / (wellnessData.length || 1))}
-                initialSpacing={20}
-                color={COLORS.primary500}
-                thickness={3}
-                dataPointsColor={COLORS.primary500}
-                dataPointsRadius={4}
-                textColor={COLORS.textSecondary}
-                textFontSize={10}
-                yAxisThickness={0}
-                xAxisThickness={1}
-                xAxisColor={COLORS.divider}
-                yAxisTextStyle={{ color: COLORS.textMuted, fontSize: 10 }}
-                xAxisLabelTextStyle={{ color: COLORS.textMuted, fontSize: 10, textAlign: 'center' }}
-                hideRules
-                curved
-                isAnimated
-                animationDuration={1200}
-                areaChart
-                startFillColor={COLORS.primary500}
-                startOpacity={0.2}
-                endFillColor={COLORS.primary500}
-                endOpacity={0.01}
-                noOfSections={4}
-                maxValue={100}
-                pointerConfig={{
-                  pointerStripHeight: 140,
-                  pointerStripColor: COLORS.primary500 + '30',
-                  pointerStripWidth: 2,
-                  pointerColor: COLORS.primary500,
-                  radius: 6,
-                  pointerLabelComponent: items => renderWellnessTooltip(items[0]),
-                  activatePointersOnLongPress: false,
-                  autoAdjustPointerLabelPosition: true,
-                }}
-                hideXAxisText
-                hideYAxisText
-              />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 40 }}>
+                <LineChart
+                  data={wellnessData}
+                  height={160}
+                  width={Math.max(CHART_WIDTH, wellnessData.length * 70)}
+                  spacing={70}
+                  initialSpacing={30}
+                  color={COLORS.accent500}
+                  thickness={4}
+                  dataPointsColor={COLORS.accent500}
+                  dataPointsRadius={5}
+                  textColor={COLORS.textSecondary}
+                  textFontSize={10}
+                  yAxisThickness={0}
+                  xAxisThickness={1}
+                  xAxisColor={COLORS.divider}
+                  yAxisTextStyle={{ color: COLORS.textMuted, fontSize: 10 }}
+                  xAxisLabelTextStyle={{ color: COLORS.textMuted, fontSize: 10, textAlign: 'center' }}
+                  hideRules
+                  curved
+                  isAnimated
+                  animationDuration={1500}
+                  areaChart
+                  startFillColor={COLORS.accent500}
+                  startOpacity={0.4}
+                  endFillColor={COLORS.accent500}
+                  endOpacity={0.02}
+                  noOfSections={4}
+                  maxValue={wellnessMaxValue}
+                  pointerConfig={{
+                    pointerStripHeight: 140,
+                    pointerStripColor: COLORS.accent500 + '30',
+                    pointerStripWidth: 2,
+                    pointerColor: COLORS.accent500,
+                    radius: 6,
+                    pointerLabelComponent: items => renderWellnessTooltip(items[0]),
+                    activatePointersOnLongPress: false,
+                    autoAdjustPointerLabelPosition: true,
+                  }}
+                />
+              </ScrollView>
             )}
           </GlassCard>
 
-          {/* Metric Toggle + Chart */}
           <View style={{ marginTop: SPACING.xl }}>
             <Text style={styles.sectionTitle}>Vital Metrics</Text>
             <MetricToggle selected={selectedMetric} onSelect={setSelectedMetric} />
@@ -340,44 +463,47 @@ export default function TrendsScreen() {
             {refreshing ? (
               <GlassSkeleton height={150} />
             ) : (
-              <LineChart
-                data={chartData}
-                height={160}
-                width={CHART_WIDTH}
-                spacing={Math.max(60, CHART_WIDTH / (chartData.length || 1))}
-                initialSpacing={20}
-                color={config.color}
-                thickness={3}
-                dataPointsColor={config.color}
-                dataPointsRadius={4}
-                textColor={COLORS.textSecondary}
-                textFontSize={10}
-                yAxisThickness={0}
-                xAxisThickness={1}
-                xAxisColor={COLORS.divider}
-                yAxisTextStyle={{ color: COLORS.textMuted, fontSize: 10 }}
-                xAxisLabelTextStyle={{ color: COLORS.textMuted, fontSize: 10, textAlign: 'center' }}
-                hideRules
-                curved
-                isAnimated
-                animationDuration={1200}
-                areaChart
-                startFillColor={config.color}
-                startOpacity={0.2}
-                endFillColor={config.color}
-                endOpacity={0.01}
-                noOfSections={4}
-                pointerConfig={{
-                  pointerStripHeight: 140,
-                  pointerStripColor: config.color + '30',
-                  pointerStripWidth: 2,
-                  pointerColor: config.color,
-                  radius: 6,
-                  pointerLabelComponent: items => renderTooltip(items[0]),
-                  activatePointersOnLongPress: false,
-                  autoAdjustPointerLabelPosition: true,
-                }}
-              />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 40 }}>
+                <LineChart
+                  data={chartData}
+                  height={160}
+                  width={Math.max(CHART_WIDTH, chartData.length * 70)}
+                  spacing={70}
+                  initialSpacing={30}
+                  color={config.color}
+                  thickness={4}
+                  dataPointsColor={config.color}
+                  dataPointsRadius={5}
+                  textColor={COLORS.textSecondary}
+                  textFontSize={10}
+                  yAxisThickness={0}
+                  xAxisThickness={1}
+                  xAxisColor={COLORS.divider}
+                  yAxisTextStyle={{ color: COLORS.textMuted, fontSize: 10 }}
+                  xAxisLabelTextStyle={{ color: COLORS.textMuted, fontSize: 10, textAlign: 'center' }}
+                  hideRules
+                  curved
+                  isAnimated
+                  animationDuration={1500}
+                  areaChart
+                  startFillColor={config.color}
+                  startOpacity={0.3}
+                  endFillColor={config.color}
+                  endOpacity={0.05}
+                  noOfSections={4}
+                  maxValue={vitalsMaxValue}
+                  pointerConfig={{
+                    pointerStripHeight: 140,
+                    pointerStripColor: config.color + '30',
+                    pointerStripWidth: 2,
+                    pointerColor: config.color,
+                    radius: 6,
+                    pointerLabelComponent: items => renderTooltip(items[0]),
+                    activatePointersOnLongPress: false,
+                    autoAdjustPointerLabelPosition: true,
+                  }}
+                />
+              </ScrollView>
             )}
           </GlassCard>
 
@@ -576,5 +702,30 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     fontWeight: '600',
     color: COLORS.textMuted,
+  },
+  // Navigator Styles
+  navigatorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.md,
+    marginBottom: SPACING.lg
+  },
+  navigatorArrow: {
+    padding: SPACING.sm,
+    backgroundColor: COLORS.card,
+    borderRadius: RADII.full,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2
+  },
+  navigatorLabel: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    minWidth: 120,
+    textAlign: 'center'
   },
 });

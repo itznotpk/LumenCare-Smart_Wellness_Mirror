@@ -1,40 +1,57 @@
 /**
- * Centralized Theme — Smart Wellness Mirror Caregiver App
- * Use alongside NativeWind; these tokens are also available for StyleSheet fallback.
+ * Centralized Theme — Lumen Caregiver App (Serenity Edition)
+ * Inspired by modern wellness and healthcare intelligence.
  */
 
+import { Platform } from 'react-native';
+
 export const COLORS = {
-  // Backgrounds: Clean iOS style
-  background: 'transparent', // Let's the root LinearGradient shine through
-  card: '#FFFFFF',       // Pure white cards
+  // Backgrounds: Organic & Serene
+  background: 'transparent', // Root LinearGradient shines through
+  card: '#FFFFFF',           // Pure white cards for clarity
+  surface: '#F8FAFC',        // Muted surfaces (Slate-50 style)
+  tint: '#ECFEFF',           // Wellness tint (Cyan-50)
 
-  // Primary – Futuristic iOS Blues
-  primary50: '#E5F0FF',
-  primary100: '#CCE0FF',
-  primary500: '#007AFF', // Classic iOS System Blue
-  primary600: '#0056B3',
-  primary900: '#002E66',
+  // Primary — Calm Daylight Cyan
+  primary50: '#ECFEFF',
+  primary100: '#CFFAFE',
+  primary500: '#0891B2',      // Daylight Cyan
+  primary600: '#0E7490',
+  primary900: '#164E63',
 
-  // Status — Vibrant iOS Colors
-  green: '#34C759',      // iOS Success Green
-  greenLight: '#E8F8EE',
-  yellow: '#FF9500',     // iOS Warning Orange
-  yellowLight: '#FFF4E5',
-  red: '#FF3B30',        // iOS Destructive Red
-  redLight: '#FFEBEA',
+  // Accent — Empathy Lavender
+  accent50: '#F5F3FF',
+  accent500: '#8B5CF6',      // Empathy Lavender
+  accent600: '#7C3AED',
 
-  // Text
-  textPrimary: '#1C1C1E', // standard iOS dark text
-  textSecondary: '#8E8E93', // standard iOS gray
-  textMuted: '#AEAEB2',
+  // Status — Organic Wellness Palette
+  green: '#10B981',          // Emerald Green
+  greenLight: '#ECFDF5',
+  sage: '#88A096',           // Calming organic sage
+  sageMuted: '#E9EFEC',
+  yellow: '#F59E0B',         // Amber
+  yellowLight: '#FFFBEB',
+  red: '#EF4444',            // Rose Red
+  redLight: '#FEF2F2',
+
+  // Text: High legibility Slate palette
+  textPrimary: '#0F172A',    // Slate-900
+  textSecondary: '#475569',  // Slate-600
+  textMuted: '#94A3B8',      // Slate-400
   white: '#FFFFFF',
 
   // Borders & Dividers
-  border: '#E5E5EA',
-  divider: '#F2F2F7',
+  border: '#E2E8F0',         // Slate-200
+  divider: '#F1F5F9',        // Slate-100
 
   // Shadows
-  shadow: '#8E8E93',
+  shadow: '#64748B',         // Slate-500 tint for shadows
+};
+
+export const FONTS = {
+  // Use 'serif' system fallback or custom if loaded in App.js
+  heading: Platform.select({ ios: 'Georgia', android: 'serif', default: 'serif' }),
+  body: Platform.select({ ios: 'System', android: 'sans-serif', default: 'sans-serif' }),
 };
 
 export const SPACING = {
@@ -54,8 +71,8 @@ export const FONT_SIZES = {
   lg: 18,
   xl: 22,
   xxl: 28,
-  vital: 48,   // 30% larger than old 36 — vital metric numbers
-  hero: 52,
+  vital: 52,   // Slightly larger for emphasis
+  hero: 56,
 };
 
 export const FONT_WEIGHTS = {
@@ -69,25 +86,47 @@ export const FONT_WEIGHTS = {
 export const RADII = {
   sm: 8,
   md: 12,
-  lg: 16,
-  xl: 20,
+  lg: 20,      // More organic rounding
+  xl: 28,      // Extra soft corners
   full: 9999,
 };
 
 export const SHADOWS = {
+  // Classic Soft
   card: {
     shadowColor: COLORS.shadow,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 16,
     elevation: 3,
   },
+  // Soft UI / Neumorphic inspired
+  soft: {
+    shadowColor: COLORS.primary500,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 5,
+  },
+  // Deep/Large
   cardLarge: {
     shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 30,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.1,
+    shadowRadius: 32,
+    elevation: 8,
+  },
+};
+
+export const ANIMATIONS = {
+  spring: {
+    damping: 15,
+    stiffness: 150,
+  },
+  breathing: {
+    duration: 3000,
+    scaleMin: 0.98,
+    scaleMax: 1.02,
   },
 };
 

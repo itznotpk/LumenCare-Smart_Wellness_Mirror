@@ -7,49 +7,40 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { COLORS, RADII, SHADOWS } from '../theme';
+import { COLORS, RADII, SHADOWS, ANIMATIONS } from '../theme';
 
 /**
  * GlassCard — the foundation for all major UI panels.
- * Now features integrated "Hover & Touch Physics". Every card feels alive
+ * Now features integrated "Lumen Serenity" physics. Every card feels alive
  * when tapped, hovered, or swiped, shrinking/highlighting dynamically.
  */
-export default function GlassCard({ children, style, intensity = 60, tint = 'light', onPress }) {
+export default function GlassCard({ children, style, intensity = 80, tint = 'light', onPress }) {
   const isActive = useSharedValue(false);
   const isHovered = useSharedValue(false);
 
-  // Buttery-smooth physics for scale, shadow depth, and frosted highlight
   const animatedCardStyle = useAnimatedStyle(() => {
-    // Mobile touch presses scale down (squish), Web hovers scale up (float).
     const scaleTo = isActive.value ? 0.96 : isHovered.value ? 1.02 : 1;
     
     return {
       transform: [
         {
-          scale: withSpring(scaleTo, {
-            damping: 15,
-            stiffness: 250,
-            mass: 0.6,
-          }),
+          scale: withSpring(scaleTo, ANIMATIONS.spring),
         },
       ],
-      // Shadows become deeper globally if hovered, flatter if pressed
-      shadowOpacity: withTiming(isActive.value ? 0.05 : isHovered.value ? 0.2 : 0.12, { duration: 150 }),
-      shadowRadius: withTiming(isActive.value ? 10 : isHovered.value ? 40 : 30, { duration: 150 }),
-      elevation: withTiming(isActive.value ? 2 : isHovered.value ? 12 : 6, { duration: 150 }),
+      shadowOpacity: withTiming(isActive.value ? 0.04 : isHovered.value ? 0.15 : 0.06, { duration: 200 }),
+      shadowRadius: withTiming(isActive.value ? 8 : isHovered.value ? 30 : 20, { duration: 200 }),
     };
   });
 
   const animatedHighlightOverlay = useAnimatedStyle(() => {
-    // Smoothly transition the "frost" intensity
     return {
       backgroundColor: withTiming(
-        isActive.value ? 'rgba(255, 255, 255, 0.6)' : isHovered.value ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.45)', 
-        { duration: 150 }
+        isActive.value ? 'rgba(255, 255, 255, 0.7)' : isHovered.value ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0.5)', 
+        { duration: 200 }
       ),
       borderColor: withTiming(
-        isActive.value ? 'rgba(255, 255, 255, 1)' : 'rgba(255, 255, 255, 0.8)', 
-        { duration: 150 }
+        isActive.value ? 'rgba(255, 255, 255, 1)' : COLORS.border, 
+        { duration: 200 }
       )
     };
   });
@@ -57,15 +48,12 @@ export default function GlassCard({ children, style, intensity = 60, tint = 'lig
   return (
     <Pressable
       onPress={onPress}
-      // Touch interactions (Mobile + Web click)
       onPressIn={() => (isActive.value = true)}
       onPressOut={() => (isActive.value = false)}
-      // Hover interactions (Web/Desktop specific)
       onHoverIn={() => (isHovered.value = true)}
       onHoverOut={() => (isHovered.value = false)}
-      // Accessibility
       accessible={!!onPress}
-      disabled={isActive.value} // prevent double taps
+      disabled={!onPress}
     >
       <Animated.View style={[styles.container, style, animatedCardStyle]}>
         <BlurView
@@ -73,9 +61,7 @@ export default function GlassCard({ children, style, intensity = 60, tint = 'lig
           tint={tint}
           style={[StyleSheet.absoluteFill, styles.blurLayer]}
         />
-        {/* Dynamic glossy reflection overly */}
         <Animated.View style={[StyleSheet.absoluteFill, styles.glassOverlay, animatedHighlightOverlay]} />
-        {/* Content payload */}
         <View style={styles.content}>{children}</View>
       </Animated.View>
     </Pressable>
@@ -85,8 +71,7 @@ export default function GlassCard({ children, style, intensity = 60, tint = 'lig
 const styles = StyleSheet.create({
   container: {
     borderRadius: RADII.xl,
-    overflow: 'hidden',
-    ...SHADOWS.cardLarge, // default diffuse shadow
+    ...SHADOWS.cardLarge,
     position: 'relative',
     backgroundColor: 'transparent', 
   },
@@ -94,7 +79,7 @@ const styles = StyleSheet.create({
     borderRadius: RADII.xl,
   },
   glassOverlay: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: RADII.xl,
   },
   content: {

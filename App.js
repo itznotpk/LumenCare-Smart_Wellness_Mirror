@@ -8,9 +8,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import BottomTabs from './src/navigation/BottomTabs';
 import AuthNavigator from './src/navigation/AuthNavigator';
 import GlassToast from './src/components/GlassToast';
+import AmbientAlertOverlay from './src/components/AmbientAlertOverlay';
 import { useAuthStore } from './src/store/useAuthStore';
 import { useProfileStore } from './src/store/useProfileStore';
 import { useAlertStore } from './src/store/useAlertStore';
+import { COLORS } from './src/theme';
 
 export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -35,8 +37,8 @@ export default function App() {
 
   if (!isInitialized) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#06b6d4" />
+      <View style={{ flex: 1, backgroundColor: COLORS.surface, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={COLORS.primary500} />
       </View>
     );
   }
@@ -45,7 +47,7 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <LinearGradient
-          colors={['#F1F5F9', '#E2E8F0', '#CBD5E1']}
+          colors={[COLORS.surface, COLORS.tint, COLORS.accent50]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradient}
@@ -56,6 +58,7 @@ export default function App() {
           </NavigationContainer>
           {/* Global UI Overlays */}
           <GlassToast />
+          <AmbientAlertOverlay />
         </LinearGradient>
       </SafeAreaProvider>
     </GestureHandlerRootView>

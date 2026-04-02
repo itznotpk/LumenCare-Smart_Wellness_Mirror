@@ -19,6 +19,7 @@ export default function FamilyScreen() {
   const showToast = useToastStore((s) => s.showToast);
 
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleUpload = ({ uri, message, type }) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -28,10 +29,11 @@ export default function FamilyScreen() {
   const onRefresh = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
+    setRefreshKey(prev => prev + 1);
     setTimeout(() => {
       setRefreshing(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }, 1500);
+    }, 1000);
   };
 
   if (isLoading) {
@@ -73,7 +75,7 @@ export default function FamilyScreen() {
 
       {/* Mirror Interaction Loop (Drops + Replies) */}
       <View style={styles.section}>
-        <MirrorInteractionLoop profileId={profile?.id} />
+        <MirrorInteractionLoop profileId={profile?.id} refreshKey={refreshKey} />
       </View>
     </ScrollView>
   );

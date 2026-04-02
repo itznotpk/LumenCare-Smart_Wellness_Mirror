@@ -85,6 +85,8 @@ sequenceDiagram
 | Safety Alert Infrastructure | Real-time fall detection and critical vital alerts powered by Supabase triggers and native push notifications. |
 | Lumen IQ (AI Chat) | A session-based, context-aware AI assistant that answers caregiver questions based on the latest patient data. |
 | Mirror Interaction Loop | Two-way media sharing (Daily Drops) with real-time mirror reactions (smiles/waves) displayed in a premium conversational feed. |
+| Universal Media Player | Support for photos and **full-screen videos** in the conversation loop, featuring native playback controls on iOS/Android. |
+| iOS Reliability Engine | Automatic **HEIC-to-JPEG** local conversion and **Base64 binary encoding** for 100% reliable 0-byte-free media uploads. |
 | Daylight Glass Aesthetic | A premium, wellness-focused UI featuring glassmorphism, smooth depth transitions, and context-aware haptic feedback. |
 
 ---

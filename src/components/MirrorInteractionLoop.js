@@ -4,12 +4,33 @@ import { Feather } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { COLORS, SPACING, FONT_SIZES, RADII, SHADOWS } from '../theme';
 import GlassCard from './GlassCard';
-import { Video } from 'expo-av';
+import { Video, Audio, ResizeMode } from 'expo-av';
 
-export default function MirrorInteractionLoop({ profileId }) {
+export default function MirrorInteractionLoop({ profileId, refreshKey }) {
   const [interactions, setInteractions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fullscreenImage, setFullscreenImage] = useState(null);
+  const [fullscreenVideo, setFullscreenVideo] = useState(null);
+  const [videoLoading, setVideoLoading] = useState(false);
+
+  useEffect(() => {
+    const setupAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          playsInSilentModeIOS: true,
+          allowsRecordingIOS: false,
+          staysActiveInBackground: false,
+          interruptionModeIOS: 1, // InterruptionModeIOS.DoNotMix
+          shouldDuckAndroid: true,
+          interruptionModeAndroid: 1, // InterruptionModeAndroid.DoNotMix
+          playThroughEarpieceAndroid: false,
+        });
+      } catch (e) {
+        console.warn('Audio setup error:', e);
+      }
+    };
+    setupAudio();
+  }, []);
 
   const fetchInteractions = async () => {
     if (!profileId) return;
@@ -50,7 +71,7 @@ export default function MirrorInteractionLoop({ profileId }) {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [profileId]);
+  }, [profileId, refreshKey]);
 
   const formatTime = (dateStr) => {
     const date = new Date(dateStr);
@@ -114,6 +135,9 @@ export default function MirrorInteractionLoop({ profileId }) {
       );
     }
 
+    const isVideo = item.media_type === 'video';
+    const mediaUrl = item.image_url; // Supabase uses image_url for both in DB if not renamed
+
     return (
       <View style={{ width: '100%' }}>
         {showDateHeader && (
@@ -123,13 +147,36 @@ export default function MirrorInteractionLoop({ profileId }) {
         )}
         
         <View style={styles.interactionContainer}>
-          {/* Caregiver Drop - Card or Bubble */}
-          <View style={[styles.sentWrap, !item.image_url && styles.sentWrapNoImage]}>
-            <View style={[styles.dropCard, !item.image_url && styles.textOnlyBubble]}>
-              {item.image_url ? (
+          {/* Caregiver Drop - Card (Image/Video) or Bubble (Text Only) */}
+          <View style={[styles.sentWrap, (!mediaUrl) && styles.sentWrapNoImage]}>
+            <View style={[styles.dropCard, (!mediaUrl) && styles.textOnlyBubble]}>
+              {mediaUrl ? (
                 <View>
-                  <TouchableOpacity activeOpacity={0.9} onPress={() => setFullscreenImage(item.image_url)}>
-                    <Image source={{ uri: item.image_url }} style={styles.cardImage} resizeMode="cover" />
+                  <TouchableOpacity 
+                    activeOpacity={0.9} 
+                    onPress={() => isVideo ? setFullscreenVideo(mediaUrl) : setFullscreenImage(mediaUrl)}
+                  >
+                    {isVideo ? (
+                      <View style={styles.videoPreviewContainer}>
+                        <Video
+                          source={{ uri: mediaUrl }}
+                          style={styles.cardImage}
+                          resizeMode={ResizeMode.COVER}
+                          shouldPlay={false}
+                          isMuted={true}
+                          pointerEvents="none"
+                          usePoster={true}
+                          posterSource={{ uri: mediaUrl }}
+                          posterStyle={{ resizeMode: 'cover' }}
+                          onError={(e) => console.log('Video Preview Error:', e)}
+                        />
+                        <View style={styles.playIconOverlay}>
+                          <Feather name="play" size={32} color={COLORS.white} />
+                        </View>
+                      </View>
+                    ) : (
+                      <Image source={{ uri: mediaUrl }} style={styles.cardImage} resizeMode="cover" />
+                    )}
                   </TouchableOpacity>
                   <View style={styles.cardContent}>
                     {item.message_text && <Text style={styles.cardText}>{item.message_text}</Text>}
@@ -139,7 +186,7 @@ export default function MirrorInteractionLoop({ profileId }) {
               ) : (
                 <View>
                   <Text style={styles.bubbleText}>
-                    {item.message_text || (item.media_type === 'video' ? "Shared a video" : "Shared a drop")}
+                    {item.message_text || "Sent a drop"}
                   </Text>
                   <Text style={styles.bubbleTime}>{formatTime(item.created_at)}</Text>
                 </View>
@@ -197,6 +244,34 @@ export default function MirrorInteractionLoop({ profileId }) {
           <Image source={{ uri: fullscreenImage }} style={styles.modalImage} resizeMode="contain" />
         </View>
       </Modal>
+
+      {/* Video Full-Screen Modal */}
+      <Modal visible={!!fullscreenVideo} transparent={true} animationType="slide" onRequestClose={() => setFullscreenVideo(null)}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity style={styles.modalCloseButton} onPress={() => setFullscreenVideo(null)}>
+            <Feather name="x" size={24} color={COLORS.white} />
+          </TouchableOpacity>
+          {videoLoading && (
+            <ActivityIndicator color={COLORS.white} size="large" style={{ position: 'absolute' }} />
+          )}
+          <Video
+            source={{ uri: fullscreenVideo }}
+            style={styles.modalImage}
+            useNativeControls
+            resizeMode={ResizeMode.CONTAIN}
+            shouldPlay
+            usePoster={true}
+            posterSource={{ uri: fullscreenVideo }}
+            posterStyle={{ resizeMode: 'contain' }}
+            onLoadStart={() => setVideoLoading(true)}
+            onLoad={() => setVideoLoading(false)}
+            onError={(e) => {
+              setVideoLoading(false);
+              console.log('Video Modal Error:', e);
+            }}
+          />
+        </View>
+      </Modal>
     </GlassCard>
   );
 }
@@ -232,6 +307,19 @@ const styles = StyleSheet.create({
   interactionContainer: {
     marginBottom: SPACING.xl,
     gap: 12,
+  },
+  videoPreviewContainer: {
+    position: 'relative',
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#000',
+  },
+  playIconOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
   // AI Event (Amber style)
   aiEventContainer: {

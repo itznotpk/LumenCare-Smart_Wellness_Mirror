@@ -1,12 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, Alert, StyleSheet, Image, TouchableOpacity, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { readAsStringAsync } from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 import { Video } from 'expo-av';
 import { Feather } from '@expo/vector-icons';
 import GlassCard from './GlassCard';
 import AnimatedPressable from './AnimatedPressable';
 import { COLORS, SPACING, FONT_SIZES, RADII, MIN_TAP_TARGET, SHADOWS } from '../theme';
 import { supabase } from '../lib/supabase';
+import { ActivityIndicator } from 'react-native';
 
 const MAX_VIDEO_DURATION_SEC = 60; // hard cap at 60s for storage/bandwidth
 
@@ -56,10 +60,12 @@ export default function DailyDropUploader({ profileId, onUpload }) {
     }
   };
 
-  const handleMediaSelected = (asset) => {
+  const [processing, setProcessing] = useState(false);
+
+  const handleMediaSelected = async (asset) => {
     // Validate video duration
     if (asset.type === 'video' && asset.duration) {
-      const durationSec = asset.duration / 1000; // expo returns ms
+      const durationSec = asset.duration / 1000;
       if (durationSec > MAX_VIDEO_DURATION_SEC) {
         Alert.alert(
           'Video Too Long',
@@ -68,10 +74,32 @@ export default function DailyDropUploader({ profileId, onUpload }) {
         return;
       }
     }
+
+    let finalUri = asset.uri;
+    let finalMime = asset.mimeType;
+
+    // Convert HEIC to JPEG if needed
+    if (asset.type === 'image') {
+      try {
+        setProcessing(true);
+        const manipResult = await ImageManipulator.manipulateAsync(
+          asset.uri,
+          [], // No transformations, just conversion
+          { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+        );
+        finalUri = manipResult.uri;
+        finalMime = 'image/jpeg';
+      } catch (e) {
+        console.warn('Image manipulation error:', e);
+      } finally {
+        setProcessing(false);
+      }
+    }
+
     setSelectedMedia({
-      uri: asset.uri,
+      uri: finalUri,
       type: asset.type || 'image',
-      mimeType: asset.mimeType || null,
+      mimeType: finalMime || null,
       duration: asset.duration || null,
     });
   };
@@ -108,21 +136,22 @@ export default function DailyDropUploader({ profileId, onUpload }) {
         const ext = selectedMedia.uri.split('.').pop() || (selectedMedia.type === 'video' ? 'mp4' : 'jpg');
         const fileName = `${profileId}/${Date.now()}.${ext}`;
 
-        // Convert local file URI to a blob for Supabase storage
-        const blob = await new Promise((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.onload = function () { resolve(xhr.response); };
-          xhr.onerror = function () { reject(new Error('Failed to convert media to blob')); };
-          xhr.responseType = 'blob';
-          xhr.open('GET', selectedMedia.uri, true);
-          xhr.send(null);
-        });
+        let binaryData;
+        if (Platform.OS === 'web') {
+          const response = await fetch(selectedMedia.uri);
+          binaryData = await response.blob();
+        } else {
+          // Native iOS/Android - use hardcoded 'base64' to avoid TypeError
+          const base64 = await readAsStringAsync(selectedMedia.uri, {
+            encoding: 'base64',
+          });
+          binaryData = decode(base64);
+        }
 
         const contentType = getContentType(selectedMedia);
-
         const { data: storageData, error: storageErr } = await supabase.storage
           .from('daily_drops')
-          .upload(fileName, blob, {
+          .upload(fileName, binaryData, {
             contentType,
             upsert: false,
           });
@@ -222,11 +251,11 @@ export default function DailyDropUploader({ profileId, onUpload }) {
             </View>
 
             <TouchableOpacity
-              style={[styles.sendCircle, uploading && styles.sendDisabled]}
+              style={[styles.sendCircle, (uploading || processing) && styles.sendDisabled]}
               onPress={handleSend}
-              disabled={uploading}
+              disabled={uploading || processing}
             >
-              {uploading ? (
+              {uploading || processing ? (
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
                 <Feather name="send" size={18} color={COLORS.white} />

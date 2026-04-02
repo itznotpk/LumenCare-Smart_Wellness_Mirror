@@ -55,6 +55,32 @@ export default function SettingsScreen() {
   const [addGender, setAddGender] = useState('');
   const [showAddDatePicker, setShowAddDatePicker] = useState(false);
   const [addConditions, setAddConditions] = useState('');
+  const [addPhotoUri, setAddPhotoUri] = useState(null);
+  const [addPhotoUploading, setAddPhotoUploading] = useState(false);
+
+  const handlePickAddPhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Please allow access to your photos.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const processed = await ImageManipulator.manipulateAsync(
+        result.assets[0].uri,
+        [{ resize: { width: 500, height: 500 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      setAddPhotoUri(processed.uri);
+    }
+  };
 
   const [contactModalVisible, setContactModalVisible] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
@@ -163,15 +189,71 @@ export default function SettingsScreen() {
     const lastName = nameParts.slice(1).join(' ');
 
     const result = await addElderly(firstName, lastName, addGender || null, addDob.trim() || null, addConditions.trim());
+    
     if (result?.success) {
+      // If a photo was selected, try uploading it to the backend face recognition service
+      if (addPhotoUri && result.newProfile?.id) {
+        setAddPhotoUploading(true);
+        try {
+          const formData = new FormData();
+          
+          if (Platform.OS === 'web') {
+            // Web requires a real Blob/File object for FormData
+            const response = await fetch(addPhotoUri);
+            const blob = await response.blob();
+            formData.append('file', blob, 'face.jpg');
+          } else {
+            // Native requires the {uri, name, type} object
+            // @ts-ignore
+            formData.append('file', {
+              uri: addPhotoUri,
+              name: 'face.jpg',
+              type: 'image/jpeg',
+            });
+          }
+          
+          formData.append('elderly_id', result.newProfile.id);
+
+          const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+          console.log(`[Face enrollment] Submitting to: ${apiUrl}/api/auth/register-face`);
+
+          const response = await fetch(`${apiUrl}/api/auth/register-face`, {
+            method: 'POST',
+            body: formData,
+            // Header is implicitly set by FormData
+          });
+
+          if (response.ok) {
+            const resData = await response.json();
+            if (!resData.success) {
+              console.warn('[Face enrollment] Server error:', resData.message);
+              showToast('Face Enrollment Note', resData.message || 'Profile created, but face recognition setup failed.', 'info');
+            } else {
+              console.log('[Face enrollment] Success:', resData.message);
+            }
+          } else {
+             const errorText = await response.text();
+             console.error('[Face enrollment] HTTP error:', response.status, errorText);
+             showToast('Face Sync Error', 'Profile created, but face registration service is currently unavailable.', 'info');
+          }
+        } catch (err) {
+          console.error('[Face enrollment] Network error:', err);
+          showToast('Face Sync Skip', 'Managed to create profile, but face registration failed (check network connection or CORS).', 'info');
+        } finally {
+          setAddPhotoUploading(false);
+        }
+      }
+
+      // Cleanup and close modal
       setAddModalVisible(false);
       setAddName('');
       setAddDob('');
       setAddGender('');
       setAddConditions('');
-      showToast('Dependent Added', 'New profile successfully registered.', 'success');
+      setAddPhotoUri(null);
+      showToast('Dependent Added', `${firstName} has been successfully registered.`, 'success');
     } else {
-      showToast('Registration Failed', result?.error || 'Could not add dependent.', 'error');
+      showToast('Registration Failed', result?.error || 'Could not save profile to database.', 'error');
     }
   };
 
@@ -900,6 +982,27 @@ export default function SettingsScreen() {
               <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <View style={styles.modalHandle} />
                 <Text style={styles.modalTitle}>Register Dependent</Text>
+
+                {/* Dependent Face Photo */}
+                <View style={{ alignItems: 'center', marginBottom: SPACING.lg }}>
+                  <TouchableOpacity 
+                    onPress={handlePickAddPhoto} 
+                    disabled={addPhotoUploading}
+                    style={{ opacity: addPhotoUploading ? 0.6 : 1 }}
+                  >
+                    <LumenAvatar 
+                      src={addPhotoUri || 'https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/avatars/avatar-1.png'}
+                      size={94}
+                      online={false}
+                    />
+                    <View style={styles.avatarEditBadge}>
+                      <Feather name="camera" size={12} color={COLORS.white} />
+                    </View>
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.textMuted, marginTop: SPACING.sm }}>
+                    {addPhotoUploading ? 'Uploading Face...' : 'Tap to add facial recognition photo'}
+                  </Text>
+                </View>
 
             <Text style={styles.inputLabel}>Name</Text>
             <TextInput

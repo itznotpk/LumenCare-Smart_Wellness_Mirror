@@ -99,38 +99,50 @@ USING (
 -- NOTE: These use the Supabase storage.objects system table.
 -- ──────────────────────────────────────────────────────────────────────────────
 
--- Allow authenticated users to upload files to the daily_drops bucket
-CREATE POLICY "Authenticated users can upload to daily_drops"
+-- Allow caregivers to upload files ONLY for their own elderlies
+CREATE POLICY "Caregivers can upload drops for their elderlies"
 ON storage.objects
 FOR INSERT
 TO authenticated
 WITH CHECK (
-  bucket_id = 'daily_drops'
+  bucket_id = 'daily_drops' AND
+  (path_tokens)[1]::uuid IN (
+    SELECT id FROM public.elderlies WHERE caregiver_id = auth.uid()
+  )
 );
 
--- Allow authenticated users to read/view files from the daily_drops bucket
-CREATE POLICY "Authenticated users can read daily_drops"
+-- Allow caregivers to read/view files ONLY for their own elderlies
+CREATE POLICY "Caregivers can read drops of their elderlies"
 ON storage.objects
 FOR SELECT
 TO authenticated
 USING (
-  bucket_id = 'daily_drops'
+  bucket_id = 'daily_drops' AND
+  (path_tokens)[1]::uuid IN (
+    SELECT id FROM public.elderlies WHERE caregiver_id = auth.uid()
+  )
 );
 
--- Allow authenticated users to update their uploaded files
-CREATE POLICY "Authenticated users can update daily_drops"
+-- Allow caregivers to update files ONLY for their own elderlies
+CREATE POLICY "Caregivers can update drops of their elderlies"
 ON storage.objects
 FOR UPDATE
 TO authenticated
 USING (
-  bucket_id = 'daily_drops'
+  bucket_id = 'daily_drops' AND
+  (path_tokens)[1]::uuid IN (
+    SELECT id FROM public.elderlies WHERE caregiver_id = auth.uid()
+  )
 );
 
--- Allow authenticated users to delete their uploaded files
-CREATE POLICY "Authenticated users can delete daily_drops"
+-- Allow caregivers to delete files ONLY for their own elderlies
+CREATE POLICY "Caregivers can delete drops of their elderlies"
 ON storage.objects
 FOR DELETE
 TO authenticated
 USING (
-  bucket_id = 'daily_drops'
+  bucket_id = 'daily_drops' AND
+  (path_tokens)[1]::uuid IN (
+    SELECT id FROM public.elderlies WHERE caregiver_id = auth.uid()
+  )
 );

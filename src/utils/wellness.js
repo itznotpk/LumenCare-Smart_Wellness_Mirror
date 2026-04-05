@@ -111,5 +111,51 @@ export function getVitalTranslation(type, value) {
   }
 }
 
+/**
+ * Get accurate reference ranges based on age and gender charts.
+ */
+export function getReferenceRanges(profile) {
+  let hrRef = "60-100 BPM"; // fallback
+  let rrRef = "10-20 BR/MIN"; // fallback adult
+
+  if (!profile || !profile.gender || !profile.date_of_birth) {
+    return { hrRef, rrRef };
+  }
+
+  const dobDate = new Date(profile.date_of_birth);
+  const now = new Date();
+  let age = now.getFullYear() - dobDate.getFullYear();
+  if (now.getMonth() < dobDate.getMonth() || (now.getMonth() === dobDate.getMonth() && now.getDate() < dobDate.getDate())) {
+    age--;
+  }
+
+  const gender = profile.gender.toLowerCase();
+
+  // Heart Rate (Athlete Min to Below Average Max)
+  if (gender === 'female') {
+    if (age <= 25) hrRef = "54-84";
+    else if (age >= 26 && age <= 35) hrRef = "54-82";
+    else if (age >= 36 && age <= 45) hrRef = "54-84";
+    else if (age >= 46 && age <= 55) hrRef = "54-83";
+    else if (age >= 56 && age <= 65) hrRef = "54-83";
+    else hrRef = "54-84";
+  } else if (gender === 'male') {
+    if (age <= 25) hrRef = "49-81";
+    else if (age >= 26 && age <= 35) hrRef = "49-81";
+    else if (age >= 36 && age <= 45) hrRef = "50-82";
+    else if (age >= 46 && age <= 55) hrRef = "50-83";
+    else if (age >= 56 && age <= 65) hrRef = "51-81";
+    else hrRef = "50-79";
+  }
+
+  // Respiration
+  if (age < 1) rrRef = "26-60";
+  else if (age >= 1 && age <= 10) rrRef = "14-50";
+  else if (age >= 11 && age < 18) rrRef = "12-22";
+  else rrRef = "10-20";
+
+  return { hrRef: `Ref: ${hrRef} BPM`, rrRef: `Ref: ${rrRef} BR/MIN` };
+}
+
 // Export constants for testing / tuning
 export const WEIGHTS = { ALPHA, BETA, GAMMA };

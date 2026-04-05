@@ -53,7 +53,7 @@ export const useVitalsStore = create((set, get) => ({
   setLatestVitals: (vitals) =>
     set({
       latestVitals: vitals,
-      wellnessScore: calculateWellnessIndex(vitals),
+      wellnessScore: vitals?.wellness_score != null ? vitals.wellness_score : calculateWellnessIndex(vitals),
     }),
 
   setOverallStatus: (status, message) =>

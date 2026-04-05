@@ -16,7 +16,7 @@ import { useVitalsStore } from '../store/useVitalsStore';
 import { useProfileStore } from '../store/useProfileStore';
 import { useToastStore } from '../store/useToastStore';
 import { useAlertStore } from '../store/useAlertStore';
-import { getVitalTranslation, getWellnessLabel } from '../utils/wellness';
+import { getVitalTranslation, getWellnessLabel, getReferenceRanges } from '../utils/wellness';
 import { COLORS, SPACING, FONT_SIZES, RADII, ANIMATIONS } from '../theme';
 import * as Haptics from 'expo-haptics';
 import { useRealtimeVitals } from '../hooks/useRealtimeVitals';
@@ -159,6 +159,7 @@ export default function DashboardScreen() {
   const profile = getActiveProfile();
   const navigation = useNavigation();
   const displayName = profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : (profile?.name || 'Unknown');
+  const { hrRef, rrRef } = getReferenceRanges(profile);
 
   // Onboarding local state
   const [firstName, setFirstName] = useState('');
@@ -537,6 +538,7 @@ export default function DashboardScreen() {
                   <Text style={[styles.reportValue, { color: COLORS.primary900 }]}>{latestVitals.heart_rate != null ? Math.round(latestVitals.heart_rate) : '—'}</Text>
                   {latestVitals.heart_rate != null && <Text style={styles.reportUnit}>BPM</Text>}
                 </View>
+                {hrRef && <Text style={{ fontSize: 10, color: COLORS.textMuted, fontStyle: 'italic', marginTop: 4 }}>{hrRef}</Text>}
               </PressableCard>
 
               {/* Respiration */}
@@ -555,6 +557,7 @@ export default function DashboardScreen() {
                   <Text style={[styles.reportValue, { color: '#5AC8FA' }]}>{latestVitals.respiratory_rate != null ? Math.round(latestVitals.respiratory_rate) : '—'}</Text>
                   {latestVitals.respiratory_rate != null && <Text style={styles.reportUnit}>BR/MIN</Text>}
                 </View>
+                {rrRef && <Text style={{ fontSize: 10, color: COLORS.textMuted, fontStyle: 'italic', marginTop: 4 }}>{rrRef}</Text>}
               </PressableCard>
 
               {/* Stress Level — now tappable */}

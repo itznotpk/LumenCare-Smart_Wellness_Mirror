@@ -7,7 +7,7 @@ import VitalCard from '../components/VitalCard';
 import WellnessScoreCard from '../components/WellnessScoreCard';
 import GlassCard from '../components/GlassCard';
 import AIHealthSummary from '../components/AIHealthSummary';
-import LumenChat from '../components/LumenChat';
+import CardioChat from '../components/CardioChat';
 import { useNavigation } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { AlertTriangle, PhoneCall } from 'lucide-react-native';
@@ -663,13 +663,13 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            {/* Lumen CareGuide — AI health summary from health_insights */}
+            {/* Cardio CareGuide — AI health summary from health_insights */}
             <View onLayout={(e) => { aiSummaryY.current = e.nativeEvent.layout.y; }}>
               <AIHealthSummary />
             </View>
 
-            {/* Lumen IQ Chat — Real-time conversation segment */}
-            <LumenChat />
+            {/* Cardio IQ Chat — Real-time conversation segment */}
+            <CardioChat />
           </View>
         )}
       </ScrollView>

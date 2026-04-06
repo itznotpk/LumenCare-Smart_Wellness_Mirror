@@ -97,7 +97,7 @@ export default function BottomTabs() {
         headerTitle: () => (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Image 
-              source={require('../../assets/CardioMira.jpeg')}
+              source={require('../../assets/icon.png')}
               style={{ width: 28, height: 28, borderRadius: 6, marginRight: 8 }}
               resizeMode="contain"
             />

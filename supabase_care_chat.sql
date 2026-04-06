@@ -1,6 +1,6 @@
 -- ==============================================================================
--- LUMENCARE: CARE_CHAT — AI Health Assistant Conversation History
--- Stores interactions between the caregiver and the Lumen IQ AI.
+-- CardioMira: CARE_CHAT — AI Health Assistant Conversation History
+-- Stores interactions between the caregiver and the Cardio IQ AI.
 -- ==============================================================================
 
 -- 1. Create the care_chat table

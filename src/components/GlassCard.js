@@ -11,7 +11,7 @@ import { COLORS, RADII, SHADOWS, ANIMATIONS } from '../theme';
 
 /**
  * GlassCard — the foundation for all major UI panels.
- * Now features integrated "Lumen Serenity" physics. Every card feels alive
+ * Now features integrated "CardioMira Serenity" physics. Every card feels alive
  * when tapped, hovered, or swiped, shrinking/highlighting dynamically.
  */
 export default function GlassCard({ children, style, intensity = 80, tint = 'light', onPress }) {

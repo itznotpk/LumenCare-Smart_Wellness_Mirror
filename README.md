@@ -1,12 +1,12 @@
 <div align="center">
 
 ```text
-  _      _    _  __  __  ______  _   _   _____            _____   ______ 
- | |    | |  | ||  \/  ||  ____|| \ | | / ____|    /\    |  __ \ |  ____|
- | |    | |  | || \  / || |__   |  \| || |        /  \   | |__) || |__   
- | |    | |  | || |\/| ||  __|  | . ` || |       / /\ \  |  _  / |  __|  
- | |____| |__| || |  | || |____ | |\  || |____  / ____ \ | | \ \ | |____ 
- |______|\____/ |_|  |_||______||_| \_| \_____|/_/    \_\|_|  \_\|______|
+   _____               _____   _____  _____  ____   __  __  _____  _____             
+  / ____|     /\      |  __ \ |  __ \|_   _|/ __ \ |  \/  ||_   _||  __ \      /\    
+ | |         /  \     | |__) || |  | | | | | |  | || \  / |  | |  | |__) |    /  \   
+ | |        / /\ \    |  _  / | |  | | | | | |  | || |\/| |  | |  |  _  /    / /\ \  
+ | |____   / ____ \   | | \ \ | |__| |_| |_| |__| || |  | | _| |_ | | \ \   / ____ \ 
+  \_____| /_/    \_\  |_|  \_\|_____/|_____|\____/ |_|  |_||_____||_|  \_\ /_/    \_\
 ```
 
 ## Real-Time Wellness Monitoring Mirror for the Elderly
@@ -46,9 +46,10 @@
 
 | Domain | Monitoring Capability |
 | :--- | :--- |
-| Physiological Health | Real-time tracking of heart rate, respiration rate, and stress level indices via rPPG sensors. |
+| Physiological Health | Real-time tracking of heart rate, respiration rate, and complex HRV indices (SDNN/RMSSD) via rPPG sensors. |
 | Emotional Well-being | Behavioral analysis of patient reactions and interactions with the Smart Mirror. |
 | Proactive Safety | Instant, rule-based notifications for occurrences such as fall detections or critical vital anomalies. |
+| Clinical Export | One-tap generation of professional PDF medical reports for doctors, containing 30-day trends and AI insights. |
 | Emotional Connection | Secure media-sharing channel (Daily Drops) to push photos and messages to the patient in real-time. |
 
 ---
@@ -59,7 +60,7 @@
 sequenceDiagram
     participant M as Smart Mirror (rPPG)
     participant S as Supabase (Realtime)
-    participant A as LumenCare App
+    participant A as CardioMira App
     participant E as Emergency Contacts
 
     M->>S: Pushes fall_detection + critical_vitals payload
@@ -83,7 +84,8 @@ sequenceDiagram
 | Multi-Range Health Trends | Longitudinal analysis with three localized viewing modes: **Daily (1D)** for granular scans, **Weekly (1W)** with a 7-day range picker, and **Yearly (1Y)** for monthly averages. |
 | Strict Profile Isolation | Enterprise-grade data partitioning ensuring zero "ghosting" or data leakage between multiple monitored elderly profiles. |
 | Safety Alert Infrastructure | Real-time fall detection and critical vital alerts powered by Supabase triggers and native push notifications. |
-| Lumen IQ (AI Chat) | A session-based, context-aware AI assistant that answers caregiver questions based on the latest patient data. |
+| Clinical Doctor Report | Generate professional, shareable PDF reports featuring 30-day baseline vitals, SDNN/RMSSD trends, and AI suggestions for medical professionals. |
+| Cardio IQ (AI Chat) | A session-based, context-aware AI assistant that answers caregiver questions based on the latest patient data. |
 | Mirror Interaction Loop | Two-way media sharing (Daily Drops) with real-time mirror reactions (smiles/waves) displayed in a premium conversational feed. |
 | Universal Media Player | Support for photos and **full-screen videos** in the conversation loop, featuring native playback controls on iOS/Android. |
 | iOS Reliability Engine | Automatic **HEIC-to-JPEG** local conversion and **Base64 binary encoding** for 100% reliable 0-byte-free media uploads. |
@@ -105,7 +107,7 @@ sequenceDiagram
 ## 📂 Project Structure
 
 ```text
-LumenCare/
+CardioMira/
 ├── assets/                    # Optimized icons and static branding resources
 ├── supabase/                  # SQL migration, schema scripts, and RLS policies
 │   ├── vitals_schema.sql      # Core algorithmic vitals logging
@@ -114,7 +116,7 @@ LumenCare/
 ├── src/
 │   ├── components/            # Reusable Atomic UI Components
 │   │   ├── AIHealthSummary.js # LLM-based wellness insights generator
-│   │   ├── LumenChat.js       # Session-based AI assistant interface
+│   │   ├── CardioChat.js       # Session-based AI assistant interface
 │   │   └── AutonomicGauge.js  # High-fidelity HRV stress level visualization
 │   ├── screens/               # Screen-level Orchestrators
 │   │   ├── DashboardScreen.js # Real-time central health command board
@@ -125,7 +127,9 @@ LumenCare/
 │   │   ├── useProfileStore.js # Cross-patient profile orchestration
 │   │   └── useSettingsStore.js# Dynamic safety and app preferences sync
 │   ├── theme/                 # Global Design tokens (Colors, Spacing, Radii)
-│   └── navigation/            # Native navigation stack and tab definitions
+│   ├── navigation/            # Native navigation stack and tab definitions
+│   └── utils/                 # Native utility engines
+│       └── pdfGenerator.js    # HTML-to-PDF clinical report engine
 └── README.md
 ```
 
@@ -135,7 +139,7 @@ LumenCare/
 
 **1. Clone the Repository**
 ```bash
-git clone https://github.com/itznotpk/LumenCare-Smart_Wellness_Mirror.git
+git clone https://github.com/itznotpk/CardioMira-Smart_Wellness_Mirror.git
 ```
 
 **2. Install Dependencies**
@@ -176,10 +180,11 @@ npx expo start
 *   ✅ **National Health Hackathon 2026**: Stable production release.
 *   ✅ **Dynamic Viewing Modes**: 1D, 1W, and 1Y viewing with monthly averaging.
 *   ✅ **Real-Time Interaction Feed**: Merged mirror reactions and daily drops.
+*   ✅ **Clinical PDF Exports**: Professional report generation with dual HRV (SDNN/RMSSD) trends.
 *   ✅ **Data Privacy Walls**: Full profile isolation across all health indices.
 *   ⏳ **Mirror Presence Detection**: Tracking active patient interaction time.
 *   ⏳ **Pharmacy Integration**: Pharmacy-linked medicine adherence tracking.
 *   ⏳ **Multi-Home Hubs**: Unified management for multiple mirror locations.
 
 ---
-*LumenCare — Clarity in Care.*
+*CardioMira — Clarity in Care.*

@@ -61,7 +61,7 @@ function SkeletonBlock({ width = '100%', height = 14, style }) {
 }
 
 /**
- * AIHealthSummary — Lumen CareGuide insight card.
+ * AIHealthSummary — Cardio CareGuide insight card.
  * Title sits OUTSIDE the card container (like "Vital Metrics" in Trends).
  * Risk badge is next to the title.
  */

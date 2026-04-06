@@ -59,30 +59,10 @@ export default function LoginScreen({ navigation }) {
           
           <View style={styles.branding}>
             <Image 
-              source={require('../../../assets/CardioMira.jpeg')} 
+              source={require('../../../assets/icon.png')} 
               style={styles.appLogo} 
               resizeMode="contain" 
             />
-            <Svg height="40" width="220" viewBox="0 0 220 40">
-              <Defs>
-                <SvgLinearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
-                  <Stop offset="0" stopColor="#8645a8" />
-                  <Stop offset="1" stopColor="#2e89d1" />
-                </SvgLinearGradient>
-              </Defs>
-              <SvgText
-                fill="url(#grad)"
-                fontFamily="sans-serif"
-                fontSize={FONT_SIZES.xxl + 8}
-                fontWeight="800"
-                x="110"
-                y="30"
-                textAnchor="middle"
-              >
-                CardioMira
-              </SvgText>
-            </Svg>
-            <Text style={styles.subtitle}>Smart Mirror</Text>
           </View>
 
           <View style={styles.cardContainer}>

@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Image,
   KeyboardAvoidingView,
+  ActivityIndicator,
   Platform,
 } from 'react-native';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Text as SvgText } from 'react-native-svg';
@@ -26,10 +27,11 @@ import GlassSkeleton from '../components/GlassSkeleton';
 import { useProfileStore } from '../store/useProfileStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { COLORS, SPACING, FONT_SIZES, RADII, SHADOWS, MIN_TAP_TARGET } from '../theme';
-import LumenAvatar from '../components/LumenAvatar';
+import CardioAvatar from '../components/CardioAvatar';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { supabase } from '../lib/supabase';
+import { generateDoctorReport } from '../utils/pdfGenerator';
 
 
 
@@ -276,21 +278,21 @@ export default function SettingsScreen() {
     );
   };
 
-  const handleExportData = () => {
-    Alert.alert(
-      'Export Vitals Data',
-      'A CSV file containing all raw vitals data will be prepared for download.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Export CSV',
-          onPress: () => {
-            useSettingsStore.getState().setLastExportDate(new Date().toISOString());
-            showToast('Export Ready', 'Vitals data saved to Downloads.', 'success');
-          },
-        },
-      ]
-    );
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
+  const handleGenerateReport = async () => {
+    if (!profile) return;
+    setIsGeneratingReport(true);
+    try {
+      showToast('Generating...', 'Preparing PDF report.', 'info');
+      await generateDoctorReport(profile, caregiverProfile);
+      showToast('Report Ready', 'PDF has been generated.', 'success');
+      useSettingsStore.getState().setLastExportDate(new Date().toISOString());
+    } catch (err) {
+      showToast('Error', err.message || 'Failed to generate report.', 'error');
+    } finally {
+      setIsGeneratingReport(false);
+    }
   };
 
   const handleDeleteContact = (id, name) => {
@@ -476,7 +478,7 @@ export default function SettingsScreen() {
           disabled={avatarUploading}
           style={{ marginRight: SPACING.lg, opacity: avatarUploading ? 0.6 : 1 }}
         >
-          <LumenAvatar 
+          <CardioAvatar 
             src={caregiverProfile?.avatar_url || "https://img.daisyui.com/images/profile/demo/gordon@192.webp"}
             size={96}
             online={true}
@@ -806,15 +808,25 @@ export default function SettingsScreen() {
       {/* Export Data */}
       <View style={[styles.card, { marginTop: SPACING.md }]}>
         <View style={styles.cardHeaderRow}>
-          <Feather name="download" size={18} color={COLORS.primary500} />
-          <Text style={styles.cardTitle}>Export Data</Text>
+          <Feather name="file-text" size={18} color={COLORS.primary500} />
+          <Text style={styles.cardTitle}>Medical Report</Text>
         </View>
         <Text style={styles.exportDescription}>
-          Download raw vitals data as a CSV file for doctors, researchers, or personal records.
+          Generate a comprehensive clinical PDF report detailing 30-day vitals trends and AI insights to share with medical professionals.
         </Text>
-        <TouchableOpacity style={styles.exportButton} onPress={handleExportData}>
-          <Feather name="file-text" size={18} color={COLORS.white} />
-          <Text style={styles.exportButtonText}>Export Vitals CSV</Text>
+        <TouchableOpacity 
+          style={[styles.exportButton, isGeneratingReport && { opacity: 0.7 }]} 
+          onPress={handleGenerateReport}
+          disabled={isGeneratingReport}
+        >
+          {isGeneratingReport ? (
+            <ActivityIndicator color={COLORS.white} size="small" style={{ marginRight: 6 }} />
+          ) : (
+            <Feather name="share" size={18} color={COLORS.white} style={{ marginRight: 6 }} />
+          )}
+          <Text style={styles.exportButtonText}>
+            {isGeneratingReport ? 'Generating...' : 'Generate Doctor Report'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -833,7 +845,7 @@ export default function SettingsScreen() {
       {/* App Info */}
       <View style={styles.appInfo}>
         <Image 
-          source={require('../../assets/CardioMira.jpeg')}
+          source={require('../../assets/icon.png')}
           style={{ width: 40, height: 40, borderRadius: 10, marginBottom: 8 }}
           resizeMode="contain"
         />
@@ -1007,7 +1019,7 @@ export default function SettingsScreen() {
                     disabled={addPhotoUploading}
                     style={{ opacity: addPhotoUploading ? 0.6 : 1 }}
                   >
-                    <LumenAvatar 
+                    <CardioAvatar 
                       src={addPhotoUri || 'https://raw.githubusercontent.com/mantinedev/mantine/master/.demo/avatars/avatar-1.png'}
                       size={94}
                       online={false}

@@ -1,5 +1,5 @@
 /**
- * Centralized Theme — Lumen Caregiver App (Serenity Edition)
+ * Centralized Theme — CardioMira Caregiver App (Serenity Edition)
  * Inspired by modern wellness and healthcare intelligence.
  */
 

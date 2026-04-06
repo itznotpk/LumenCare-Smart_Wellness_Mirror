@@ -4,10 +4,10 @@
     "slug": "CardioMira",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/CardioMira.jpeg",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/CardioMira.jpeg",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },

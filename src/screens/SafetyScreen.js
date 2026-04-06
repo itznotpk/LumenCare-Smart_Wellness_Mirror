@@ -47,6 +47,9 @@ export default function SafetyScreen() {
   const [editEndTime, setEditEndTime] = useState('');
   const [editPeriod, setEditPeriod] = useState('AM');
 
+  // Collapsible state for Timeline
+  const [isTimelineCollapsed, setIsTimelineCollapsed] = useState(false);
+
   // Fetch activity events and learned routines on mount
   useEffect(() => {
     if (profile?.id) {
@@ -151,9 +154,30 @@ export default function SafetyScreen() {
       >
         {/* Activity Timeline */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Activity Timeline</Text>
+          <TouchableOpacity 
+            style={styles.sectionHeaderRow} 
+            activeOpacity={0.7}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setIsTimelineCollapsed(!isTimelineCollapsed);
+            }}
+          >
+            <Text style={styles.sectionTitle}>Activity Timeline</Text>
+            <Feather 
+              name={isTimelineCollapsed ? "chevron-down" : "chevron-up"} 
+              size={20} 
+              color={COLORS.textMuted} 
+            />
+          </TouchableOpacity>
+          
           <GlassCard style={styles.timelineCard}>
-            {refreshing ? (
+            {isTimelineCollapsed ? (
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: FONT_SIZES.xs, color: COLORS.textMuted, fontWeight: '600' }}>
+                  {sortedActivities.length} Events Hidden
+                </Text>
+              </View>
+            ) : refreshing ? (
               <View>
                 <GlassSkeleton height={70} />
                 <GlassSkeleton height={70} />
@@ -299,6 +323,11 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.lg,
     fontWeight: '700',
     color: COLORS.textPrimary,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: SPACING.sm,
   },
   timelineCard: {

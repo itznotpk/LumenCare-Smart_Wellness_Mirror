@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -9,11 +10,11 @@ import { COLORS, SPACING, FONT_SIZES, RADII, SHADOWS } from '../theme';
 import * as Haptics from 'expo-haptics';
 
 /**
- * LumenChat — Session-based real-time conversation segment.
+ * CardioChat — Session-based real-time conversation segment.
  * Supports "Clear History" (soft-delete via is_cleared) and 
  * conversation grouping via conversation_id.
  */
-export default function LumenChat() {
+export default function CardioChat() {
   const [messages, setMessages] = useState([]);
   const [query, setQuery] = useState('');
   const [isAsking, setIsAsking] = useState(false);
@@ -40,7 +41,7 @@ export default function LumenChat() {
       .limit(50);
 
     if (error) {
-      console.error('[LumenChat] Fetch error:', error.message);
+      console.error('[CardioChat] Fetch error:', error.message);
     } else {
       setMessages(data || []);
       // If we have messages, use the conversation_id from the latest one
@@ -60,7 +61,7 @@ export default function LumenChat() {
     fetchMessages();
 
     const channel = supabase
-      .channel(`lumen_chat_${profile.id}`)
+      .channel(`cardio_chat_${profile.id}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -143,7 +144,7 @@ export default function LumenChat() {
       }, 2500);
 
     } catch (e) {
-      console.error('[LumenChat] error:', e.message);
+      console.error('[CardioChat] error:', e.message);
       showToast('Error', 'Failed to send message.', 'error');
       setIsAsking(false);
     }
@@ -166,7 +167,7 @@ export default function LumenChat() {
           text: 'Reset', 
           style: 'destructive',
           onPress: async () => {
-            console.log('[LumenChat] Archiving specific IDs:', activeIds);
+            console.log('[CardioChat] Archiving specific IDs:', activeIds);
 
             // Targeted update by ID list
             const { error, count } = await supabase
@@ -175,10 +176,10 @@ export default function LumenChat() {
               .in('id', activeIds);
             
             if (error) {
-              console.error('[LumenChat] Reset error:', error.message, error.details);
+              console.error('[CardioChat] Reset error:', error.message, error.details);
               showToast('Error', 'Failed to archive chat. Check connection.', 'error');
             } else {
-              console.log('[LumenChat] Successfully archived. Count:', count);
+              console.log('[CardioChat] Successfully archived. Count:', count);
               // Optimistic UI update
               setMessages([]);
               setActiveConversationId(null);
@@ -218,7 +219,7 @@ export default function LumenChat() {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
       <View style={styles.headerRow}>
-        <Text style={styles.chatTitle}>Ask Lumen IQ</Text>
+        <Text style={styles.chatTitle}>Ask Cardio IQ</Text>
         {messages.length > 0 && (
           <TouchableOpacity onPress={handleClearHistory} style={styles.clearBtn}>
             <Feather name="refresh-cw" size={14} color={COLORS.primary500} />

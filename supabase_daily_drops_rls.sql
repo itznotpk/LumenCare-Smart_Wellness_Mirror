@@ -1,5 +1,5 @@
 -- ==============================================================================
--- LUMENCARE: DAILY DROPS & MIRROR REACTIONS — RLS POLICIES
+-- CardioMira: DAILY DROPS & MIRROR REACTIONS — RLS POLICIES
 -- Run this in the Supabase SQL Editor to unlock Daily Drop functionality.
 -- ==============================================================================
 

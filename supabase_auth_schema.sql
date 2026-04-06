@@ -1,5 +1,5 @@
 -- ==============================================================================
--- LUMENCARE: SUPABASE AUTHENTICATION SCHEMA
+-- CardioMira: SUPABASE AUTHENTICATION SCHEMA
 -- Paste this entire file into the Supabase SQL Editor and hit "Run".
 -- ==============================================================================
 
@@ -60,5 +60,5 @@ CREATE TRIGGER on_auth_user_created
 
 -- ==============================================================================
 -- DONE! 
--- Your LumenCare Authentication Gateway and database sync is now securely established.
+-- Your CardioMira Authentication Gateway and database sync is now securely established.
 -- ==============================================================================

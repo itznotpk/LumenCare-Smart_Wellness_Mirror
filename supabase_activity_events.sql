@@ -1,5 +1,5 @@
 -- ==============================================================================
--- LUMENCARE: ACTIVITY EVENTS — Unified Activity Timeline
+-- CardioMira: ACTIVITY EVENTS — Unified Activity Timeline
 -- Run this in your Supabase SQL Editor.
 -- Creates the activity_events table, RLS policies, and 3 auto-populating triggers.
 -- ==============================================================================

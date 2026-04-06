@@ -1,5 +1,5 @@
 -- ==============================================================================
--- LUMENCARE: EMERGENCY_CONTACTS
+-- CardioMira: EMERGENCY_CONTACTS
 -- Stores real phone numbers for emergency escalation and alerts.
 -- ==============================================================================
 

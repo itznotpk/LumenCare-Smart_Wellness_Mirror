@@ -1,5 +1,5 @@
 -- ==============================================================================
--- LUMENCARE: LEARNED ROUTINES — AI-Detected Behavioral Patterns
+-- CardioMira: LEARNED ROUTINES — AI-Detected Behavioral Patterns
 -- Run this in your Supabase SQL Editor.
 -- Creates the learned_routines table, RLS, and auto-seed trigger.
 -- ==============================================================================

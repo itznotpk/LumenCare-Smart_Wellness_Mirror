@@ -1,5 +1,5 @@
 -- ==============================================================================
--- LUMENCARE: ADD media_type COLUMN TO daily_drops TABLE
+-- CardioMira: ADD media_type COLUMN TO daily_drops TABLE
 -- Run this in the Supabase SQL Editor.
 -- This lets the mirror distinguish between image and video Daily Drops.
 -- ==============================================================================

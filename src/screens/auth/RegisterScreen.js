@@ -85,8 +85,7 @@ export default function RegisterScreen({ navigation }) {
           <View style={styles.header}>
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>
-              Join <Text style={{ fontWeight: '800' }}>Lumen</Text>
-              <Text style={{ fontWeight: '400' }}>Care</Text> Today
+              Join <Text style={{ fontWeight: '800' }}>CardioMira</Text> Today
             </Text>
           </View>
 

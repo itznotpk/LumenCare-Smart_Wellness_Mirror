@@ -516,15 +516,7 @@ export default function TrendsScreen() {
         </>
       )}
 
-      {/* Export Button */}
-      <AnimatedPressable
-        style={styles.exportButton}
-        onPress={handleExport}
-        accessibilityLabel="Generate Doctor's Report"
-      >
-        <Feather name="file-text" size={18} color={COLORS.white} />
-        <Text style={styles.exportText}>Generate Doctor's Report</Text>
-      </AnimatedPressable>
+
     </ScrollView>
   );
 }

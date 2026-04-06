@@ -1,5 +1,5 @@
 -- ==============================================================================
--- LUMENCARE: ELDERLY & CLINICAL DATA SCHEMA
+-- CardioMira: ELDERLY & CLINICAL DATA SCHEMA
 -- Do not run this yet if you are just reviewing.
 -- This file defines how a single Caregiver account links to multiple Elderlies
 -- and securely silos their private medical/vital data.

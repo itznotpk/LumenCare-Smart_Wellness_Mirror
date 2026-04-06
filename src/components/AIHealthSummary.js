@@ -108,7 +108,7 @@ export default function AIHealthSummary() {
     return (
       <View>
         <View style={styles.externalTitleRow}>
-          <Text style={styles.externalTitle}>Lumen CareGuide</Text>
+          <Text style={styles.externalTitle}>CardioMira Guide</Text>
         </View>
         <View style={styles.container}>
           <LinearGradient
@@ -139,7 +139,7 @@ export default function AIHealthSummary() {
     return (
       <View>
         <View style={styles.externalTitleRow}>
-          <Text style={styles.externalTitle}>Lumen CareGuide</Text>
+          <Text style={styles.externalTitle}>CardioMira Guide</Text>
         </View>
         <View style={styles.container}>
           <LinearGradient
@@ -207,7 +207,7 @@ export default function AIHealthSummary() {
     <Animated.View entering={FadeIn.duration(400)}>
       {/* ── Title + Risk Badge — outside the card ── */}
       <View style={styles.externalTitleRow}>
-        <Text style={styles.externalTitle}>Lumen CareGuide</Text>
+        <Text style={styles.externalTitle}>CardioMira Guide</Text>
         <View style={[styles.badge, { backgroundColor: badge.bg }]}>
           <View style={[styles.badgeDot, { backgroundColor: badge.text }]} />
           <Text style={[styles.badgeText, { color: badge.text }]}>{badge.label}</Text>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Text as SvgText } from 'react-native-svg';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -58,15 +59,30 @@ export default function LoginScreen({ navigation }) {
           
           <View style={styles.branding}>
             <Image 
-              source={require('../../../assets/LumenCare icon.png')} 
+              source={require('../../../assets/CardioMira.jpeg')} 
               style={styles.appLogo} 
               resizeMode="contain" 
             />
-            <Text style={styles.title}>
-              <Text style={styles.titleBold}>Lumen</Text>
-              <Text style={styles.titleRegular}>Care</Text>
-            </Text>
-            <Text style={styles.subtitle}>Clarity in Care</Text>
+            <Svg height="40" width="220" viewBox="0 0 220 40">
+              <Defs>
+                <SvgLinearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor="#8645a8" />
+                  <Stop offset="1" stopColor="#2e89d1" />
+                </SvgLinearGradient>
+              </Defs>
+              <SvgText
+                fill="url(#grad)"
+                fontFamily="sans-serif"
+                fontSize={FONT_SIZES.xxl + 8}
+                fontWeight="800"
+                x="110"
+                y="30"
+                textAnchor="middle"
+              >
+                CardioMira
+              </SvgText>
+            </Svg>
+            <Text style={styles.subtitle}>Smart Mirror</Text>
           </View>
 
           <View style={styles.cardContainer}>
@@ -143,7 +159,7 @@ export default function LoginScreen({ navigation }) {
           </View>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>New to LumenCare?</Text>
+            <Text style={styles.footerText}>New to CardioMira?</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')} style={styles.linkButton}>
               <Text style={styles.linkText}>Create Account</Text>
             </TouchableOpacity>

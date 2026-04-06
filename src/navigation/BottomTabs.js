@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
+import Svg, { Defs, LinearGradient, Stop, Text as SvgText } from 'react-native-svg';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -96,14 +97,28 @@ export default function BottomTabs() {
         headerTitle: () => (
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Image 
-              source={require('../../assets/LumenCare icon.png')}
+              source={require('../../assets/CardioMira.jpeg')}
               style={{ width: 28, height: 28, borderRadius: 6, marginRight: 8 }}
               resizeMode="contain"
             />
-            <Text style={{ fontSize: FONT_SIZES.lg, color: COLORS.textPrimary }}>
-              <Text style={{ fontWeight: '800' }}>Lumen</Text>
-              <Text style={{ fontWeight: '400' }}>Care</Text>
-            </Text>
+            <Svg height="30" width="150" viewBox="0 0 150 30">
+              <Defs>
+                <LinearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
+                  <Stop offset="0" stopColor="#8645a8" />
+                  <Stop offset="1" stopColor="#2e89d1" />
+                </LinearGradient>
+              </Defs>
+              <SvgText
+                fill="url(#grad)"
+                fontFamily="sans-serif"
+                fontSize={FONT_SIZES.lg}
+                fontWeight="800"
+                x="0"
+                y="20"
+              >
+                CardioMira
+              </SvgText>
+            </Svg>
           </View>
         ),
         headerTitleAlign: 'left',

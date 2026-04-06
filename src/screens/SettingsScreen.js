@@ -15,6 +15,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Text as SvgText } from 'react-native-svg';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
@@ -832,16 +833,32 @@ export default function SettingsScreen() {
       {/* App Info */}
       <View style={styles.appInfo}>
         <Image 
-          source={require('../../assets/LumenCare icon.png')}
+          source={require('../../assets/CardioMira.jpeg')}
           style={{ width: 40, height: 40, borderRadius: 10, marginBottom: 8 }}
           resizeMode="contain"
         />
-        <Text style={styles.appInfoText}>
-          <Text style={{ fontWeight: '800' }}>Lumen</Text>
-          <Text style={{ fontWeight: '400' }}>Care</Text> v1.0.0
-        </Text>
+        <Svg height="24" width="120" viewBox="0 0 120 24">
+          <Defs>
+            <SvgLinearGradient id="gradSettings" x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor="#8645a8" />
+              <Stop offset="1" stopColor="#2e89d1" />
+            </SvgLinearGradient>
+          </Defs>
+          <SvgText
+            fill="url(#gradSettings)"
+            fontFamily="sans-serif"
+            fontSize="18"
+            fontWeight="800"
+            x="60"
+            y="18"
+            textAnchor="middle"
+          >
+            CardioMira
+          </SvgText>
+        </Svg>
+        <Text style={[styles.appInfoText, { marginTop: 4, fontSize: 12 }]}>v1.0.0</Text>
         <Text style={[styles.appInfoText, { textTransform: 'uppercase', letterSpacing: 2, fontSize: 10, marginTop: 4 }]}>
-          Clarity in Care
+          Smart Mirror
         </Text>
       </View>
 

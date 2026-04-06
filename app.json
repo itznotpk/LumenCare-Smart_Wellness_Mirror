@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "NNH",
-    "slug": "NNH",
+    "name": "CardioMira",
+    "slug": "CardioMira",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/CardioMira.jpeg",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/CardioMira.jpeg",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },

@@ -259,7 +259,7 @@ export default function DashboardScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <GlassCard intensity={80} style={{ padding: SPACING.xl }}>
-            <Text style={{ fontSize: 24, fontWeight: '800', color: COLORS.textPrimary, marginBottom: SPACING.xs }}>Welcome to LumenCare!</Text>
+            <Text style={{ fontSize: 24, fontWeight: '800', color: COLORS.textPrimary, marginBottom: SPACING.xs }}>Welcome to CardioMira!</Text>
             <Text style={{ fontSize: FONT_SIZES.md, color: COLORS.textSecondary, marginBottom: SPACING.xl }}>
               Please register your loved one & activate mirror connections.
             </Text>

@@ -243,7 +243,7 @@ export default function MirrorInteractionLoop({ profileId, refreshKey }) {
           keyExtractor={(item, index) => `${item.id || index}-${profileId}`}
           renderItem={renderItem}
           scrollEnabled={false}
-          ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         />
       )}
 
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   },
   dateHeader: {
     alignItems: 'center',
-    marginVertical: 24,
+    marginVertical: 12,
   },
   dateHeaderText: {
     fontSize: 10,
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   interactionContainer: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.md,
     gap: 12,
   },
   videoPreviewContainer: {
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   // AI Event (Amber style)
   aiEventContainer: {
     alignItems: 'center',
-    marginVertical: 12,
+    marginVertical: 6,
   },
   aiEventPill: {
     flexDirection: 'row',

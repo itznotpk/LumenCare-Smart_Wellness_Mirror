@@ -69,6 +69,8 @@ export default function TrendsScreen() {
   const history = useVitalsStore((s) => s.history);
   const baselineAverage = useVitalsStore((s) => s.baselineAverage);
   const getActiveProfile = useProfileStore((s) => s.getActiveProfile);
+  const activeProfileId = useProfileStore((s) => s.activeProfileId);
+  const profiles = useProfileStore((s) => s.profiles);
   const isLoading = useProfileStore((s) => s.isLoading);
   const profile = getActiveProfile();
   const navigation = useNavigation();

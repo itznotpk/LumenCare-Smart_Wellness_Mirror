@@ -32,6 +32,8 @@ export default function SafetyScreen() {
   const updateLearnedRoutine = useAlertStore((s) => s.updateLearnedRoutine);
   
   const getActiveProfile = useProfileStore((s) => s.getActiveProfile);
+  const activeProfileId = useProfileStore((s) => s.activeProfileId);
+  const profiles = useProfileStore((s) => s.profiles);
   const isLoading = useProfileStore((s) => s.isLoading);
   const profile = getActiveProfile();
   const navigation = useNavigation();

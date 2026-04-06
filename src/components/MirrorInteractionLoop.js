@@ -32,8 +32,8 @@ export default function MirrorInteractionLoop({ profileId, refreshKey }) {
     setupAudio();
   }, []);
 
-  const fetchInteractions = async () => {
-    if (!profileId) return;
+  const fetchInteractions = async (currentProfileId) => {
+    if (!currentProfileId) return;
     setInteractions([]);
     setLoading(true);
 
@@ -41,7 +41,7 @@ export default function MirrorInteractionLoop({ profileId, refreshKey }) {
     const { data: drops } = await supabase
       .from('daily_drops')
       .select('*, mirror_reactions(*)')
-      .eq('elderly_id', profileId)
+      .eq('elderly_id', currentProfileId)
       .order('created_at', { ascending: false })
       .limit(10);
 
@@ -49,10 +49,13 @@ export default function MirrorInteractionLoop({ profileId, refreshKey }) {
     const { data: standaloneReactions } = await supabase
       .from('mirror_reactions')
       .select('*')
-      .eq('elderly_id', profileId)
+      .eq('elderly_id', currentProfileId)
       .is('related_drop_id', null)
       .order('created_at', { ascending: false })
       .limit(10);
+
+    // If profileId changed while fetching, ignore this result to prevent race conditions
+    if (currentProfileId !== profileId) return;
 
     // 3. Merge and Sort chronologically
     let combined = [...(drops || []), ...(standaloneReactions || [])];
@@ -63,14 +66,23 @@ export default function MirrorInteractionLoop({ profileId, refreshKey }) {
   };
 
   useEffect(() => {
-    fetchInteractions();
+    if (!profileId) return;
+    
+    fetchInteractions(profileId);
 
-    const channel = supabase.channel('mirror_realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'daily_drops', filter: `elderly_id=eq.${profileId}` }, () => fetchInteractions())
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mirror_reactions', filter: `elderly_id=eq.${profileId}` }, () => fetchInteractions())
+    const channelName = `mirror_realtime_${profileId}`;
+    const channel = supabase.channel(channelName)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'daily_drops', filter: `elderly_id=eq.${profileId}` }, () => {
+        if (profileId) fetchInteractions(profileId);
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mirror_reactions', filter: `elderly_id=eq.${profileId}` }, () => {
+        if (profileId) fetchInteractions(profileId);
+      })
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [profileId, refreshKey]);
 
   const formatTime = (dateStr) => {
@@ -228,7 +240,7 @@ export default function MirrorInteractionLoop({ profileId, refreshKey }) {
       ) : (
         <FlatList
           data={interactions}
-          keyExtractor={(item, index) => item.id || index.toString()}
+          keyExtractor={(item, index) => `${item.id || index}-${profileId}`}
           renderItem={renderItem}
           scrollEnabled={false}
           ItemSeparatorComponent={() => <View style={{ height: 16 }} />}

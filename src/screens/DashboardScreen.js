@@ -150,6 +150,8 @@ export default function DashboardScreen() {
   }, [latestVitals?.recorded_at]);
 
   const getActiveProfile = useProfileStore((s) => s.getActiveProfile);
+  const activeProfileId = useProfileStore((s) => s.activeProfileId);
+  const profiles = useProfileStore((s) => s.profiles);
   const isLoading = useProfileStore((s) => s.isLoading);
   const addElderly = useProfileStore((s) => s.addElderly);
   const showToast = useToastStore((s) => s.showToast);

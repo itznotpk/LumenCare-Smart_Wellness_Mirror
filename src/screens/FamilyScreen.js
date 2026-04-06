@@ -14,6 +14,8 @@ import { COLORS, SPACING, FONT_SIZES, RADII } from '../theme';
  */
 export default function FamilyScreen() {
   const getActiveProfile = useProfileStore((s) => s.getActiveProfile);
+  const activeProfileId = useProfileStore((s) => s.activeProfileId);
+  const profiles = useProfileStore((s) => s.profiles);
   const isLoading = useProfileStore((s) => s.isLoading);
   const profile = getActiveProfile();
   const showToast = useToastStore((s) => s.showToast);

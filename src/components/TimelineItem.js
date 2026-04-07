@@ -37,6 +37,12 @@ const isFallEvent = (item) => {
   return false;
 };
 
+const isExpressionAlert = (item) =>
+  item.event_type === 'expression_alert';
+
+const isExpression = (item) =>
+  item.event_type === 'expression' || item.event_type === 'expression_alert';
+
 const getEventIcon = (eventType, description = '') => {
   const descLower = description.toLowerCase();
 
@@ -70,6 +76,16 @@ const getEventIcon = (eventType, description = '') => {
     return { name: 'image', color: COLORS.accent500, bgColor: COLORS.accent50 };
   }
 
+  // 😢 Distressed expression (sad, fearful, angry, sos)
+  if (eventType === 'expression_alert') {
+    return { name: 'frown', color: '#DC2626', bgColor: '#FEE2E2' };
+  }
+
+  // 😊 Neutral / positive expression (smile, wave, happy)
+  if (eventType === 'expression') {
+    return { name: 'smile', color: '#D97706', bgColor: '#FEF3C7' };
+  }
+
   // General scan fallback
   if (eventType === 'scan') {
     return { name: 'activity', color: COLORS.sage, bgColor: COLORS.sageMuted };
@@ -90,6 +106,7 @@ const getEventIcon = (eventType, description = '') => {
 const isAnomaly = (item) => {
   const descLower = (item.description || '').toLowerCase();
   if (isFallEvent(item)) return true;
+  if (isExpressionAlert(item)) return true;
   if (item.vitals_status === 'critical' || item.vitals_status === 'warning') return true;
   if (descLower.includes('missed') || descLower.includes('no routine') || descLower.includes('overdue')) return true;
   return false;
@@ -106,6 +123,8 @@ export default function TimelineItem({ item, isLast }) {
   const iconConfig = getEventIcon(item.event_type, item.description);
   const anomaly = isAnomaly(item);
   const isFall = isFallEvent(item);
+  const exprAlert = isExpressionAlert(item);
+  const expr = isExpression(item);
 
   const time = new Date(item.occurred_at);
   const now = new Date();
@@ -119,32 +138,52 @@ export default function TimelineItem({ item, isLast }) {
 
   return (
     <View style={[
-      styles.container, 
-      anomaly && !isFall && styles.anomalyContainer,
-      isFall && styles.fallContainer
+      styles.container,
+      anomaly && !isFall && !exprAlert && styles.anomalyContainer,
+      isFall && styles.fallContainer,
+      exprAlert && styles.expressionAlertContainer,
+      expr && !exprAlert && styles.expressionContainer,
     ]}>
       {/* Timeline connector */}
       <View style={styles.timeline}>
         <View style={[styles.dot, { backgroundColor: iconConfig.bgColor }]}>
           <Feather name={iconConfig.name} size={14} color={iconConfig.color} />
         </View>
-        {!isLast && <View style={[styles.connector, anomaly && styles.anomalyConnector, isFall && styles.fallConnector]} />}
+        {!isLast && (
+          <View style={[
+            styles.connector,
+            anomaly && !isFall && !exprAlert && styles.anomalyConnector,
+            isFall && styles.fallConnector,
+            exprAlert && styles.expressionAlertConnector,
+          ]} />
+        )}
       </View>
 
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.headerRow}>
-          <Text style={[styles.time, isFall && { color: '#DC2626' }]}>{prefix}{timeStr}</Text>
+          <Text style={[
+            styles.time,
+            isFall && { color: '#DC2626' },
+            exprAlert && { color: '#B45309' },
+          ]}>{prefix}{timeStr}</Text>
           {isFall && (
             <View style={styles.urgentBadge}>
               <Text style={styles.urgentBadgeText}>URGENT</Text>
             </View>
           )}
+          {exprAlert && (
+            <View style={styles.distressedBadge}>
+              <Text style={styles.distressedBadgeText}>DISTRESSED</Text>
+            </View>
+          )}
         </View>
         <Text style={[
-          styles.description, 
-          anomaly && !isFall && styles.anomalyDescription,
-          isFall && styles.fallDescription
+          styles.description,
+          anomaly && !isFall && !exprAlert && styles.anomalyDescription,
+          isFall && styles.fallDescription,
+          exprAlert && styles.expressionAlertDescription,
+          expr && !exprAlert && styles.expressionDescription,
         ]}>
           {item.description}
         </Text>
@@ -223,6 +262,29 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#B91C1C',
   },
+  // Expression — positive/neutral emotions (amber tint)
+  expressionContainer: {
+    backgroundColor: '#FFFBEB',
+    borderLeftWidth: 3,
+    borderLeftColor: '#F59E0B',
+  },
+  expressionDescription: {
+    fontWeight: '600',
+    color: '#92400E',
+  },
+  // Expression alert — distressed emotions (rose tint, like fall)
+  expressionAlertContainer: {
+    backgroundColor: '#FFF7ED',
+    borderLeftWidth: 3,
+    borderLeftColor: '#EA580C',
+  },
+  expressionAlertConnector: {
+    backgroundColor: '#EA580C',
+  },
+  expressionAlertDescription: {
+    fontWeight: '700',
+    color: '#9A3412',
+  },
   urgentBadge: {
     backgroundColor: COLORS.red,
     paddingVertical: 3,
@@ -230,6 +292,18 @@ const styles = StyleSheet.create({
     borderRadius: RADII.full,
   },
   urgentBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: COLORS.white,
+    letterSpacing: 0.5,
+  },
+  distressedBadge: {
+    backgroundColor: '#EA580C',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: RADII.full,
+  },
+  distressedBadgeText: {
     fontSize: 10,
     fontWeight: '800',
     color: COLORS.white,

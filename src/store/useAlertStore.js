@@ -232,6 +232,17 @@ export const useAlertStore = create((set, get) => ({
           }));
         }
       )
+      .on('system', {}, (status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Alerts] Realtime channel connected ✅');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.warn('[Alerts] Realtime channel error — fall alerts will require manual refresh.');
+        } else if (status === 'TIMED_OUT') {
+          console.warn('[Alerts] Realtime channel timed out.');
+        } else if (status === 'CLOSED') {
+          console.log('[Alerts] Realtime channel closed.');
+        }
+      })
       .subscribe();
 
     return () => {
